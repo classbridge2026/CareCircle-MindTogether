@@ -1,0 +1,1 @@
+ALTER TYPE "AppointmentStatus" ADD VALUE 'PENDING_APPROVAL';

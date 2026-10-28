@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/geist-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/geist-mono-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --background: #f4f7f6;
+  --foreground: #142421;
+  --font-geist-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-care-deep: #0c3b38;
+  --color-care-teal: #0b4a45;
+  --color-care-teal-hover: #083f3b;
+  --color-care-ink: #142421;
+  --color-care-muted: #3e5551;
+  --color-care-line: #c9d7d3;
+  --color-care-paper: #f4f7f6;
+  --color-care-card: #ffffff;
+  --color-care-danger: #8e2424;
+  --color-brand-navy: #12304a;
+  --color-brand-navy-mid: #16375c;
+  --color-brand-teal: #0f766e;
+  --color-brand-teal-hover: #0b5f59;
+  --color-brand-ink: #10233c;
+  --color-brand-muted: #3a4a60;
+  --color-brand-line: #d5deea;
+  --color-brand-paper: #f4f7fb;
+  --color-brand-ice: #eef3f8;
+  --color-brand-mist: #e7f3f1;
+  --color-brand-danger: #9b2330;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Landing page: no permanent scrollbar. Phones stay hidden. Desktop shows a bar only while scrolling. */
+html.landing-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html.landing-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.landing-scroll-thumb {
+  opacity: 0;
+}
+
+.landing-scroll-thumb.is-visible {
+  opacity: 1;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), "Segoe UI", sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Spinner sits beside the label while that click is still working. */
+html:has([data-loading="true"]) {
+  cursor: progress;
+}
+
+button[data-loading="true"],
+a[data-loading="true"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  cursor: progress;
+  pointer-events: none;
+}
+
+button[data-loading="true"]::before,
+a[data-loading="true"]::before {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  border: 2.5px solid var(--btn-spinner, currentColor);
+  border-right-color: transparent;
+  transform-origin: center;
+  animation: carecircle-spin 0.6s linear infinite;
+}
+
+@keyframes carecircle-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button[data-loading="true"]::before,
+  a[data-loading="true"]::before {
+    animation-duration: 1.4s;
+  }
+}
+
+.brand-mark {
+  overflow: hidden;
+  border-radius: 9999px;
+  clip-path: circle(50%);
+}

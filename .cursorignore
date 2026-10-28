@@ -1,0 +1,4 @@
+﻿# Keep local secrets out of Cursor index and agent context
+.env
+.env.*
+!.env.example

@@ -1,0 +1,92 @@
+"use client";
+
+import { config } from "@fortawesome/fontawesome-svg-core";
+import "@fortawesome/fontawesome-svg-core/styles.css";
+import {
+  faArrowRight,
+  faBars,
+  faBell,
+  faBolt,
+  faCalendarDays,
+  faChartPie,
+  faChevronDown,
+  faChevronRight,
+  faCircleCheck,
+  faClock,
+  faMagnifyingGlass,
+  faChartColumn,
+  faClipboardCheck,
+  faClipboardList,
+  faCreditCard,
+  faEye,
+  faGaugeHigh,
+  faGear,
+  faHandHoldingMedical,
+  faIdCard,
+  faLocationDot,
+  faMoneyBillWave,
+  faNotesMedical,
+  faPenToSquare,
+  faPlus,
+  faTrashCan,
+  faRightFromBracket,
+  faScaleBalanced,
+  faShieldHalved,
+  faStethoscope,
+  faTriangleExclamation,
+  faUser,
+  faUserDoctor,
+  faUserShield,
+  faUsers,
+  faXmark,
+  type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+config.autoAddCss = false;
+
+const icons = {
+  gauge: faGaugeHigh,
+  users: faUsers,
+  user: faUser,
+  patient: faIdCard,
+  doctor: faUserDoctor,
+  shield: faUserShield,
+  verify: faClipboardCheck,
+  specialty: faStethoscope,
+  service: faNotesMedical,
+  offering: faHandHoldingMedical,
+  fee: faMoneyBillWave,
+  location: faLocationDot,
+  calendar: faCalendarDays,
+  payment: faCreditCard,
+  reconcile: faScaleBalanced,
+  issue: faTriangleExclamation,
+  bell: faBell,
+  settings: faGear,
+  audit: faClipboardList,
+  screening: faClipboardCheck,
+  reports: faChartColumn,
+  pie: faChartPie,
+  shieldCheck: faShieldHalved,
+  check: faCircleCheck,
+  menu: faBars,
+  close: faXmark,
+  signOut: faRightFromBracket,
+  chevron: faChevronDown,
+  chevronRight: faChevronRight,
+  clock: faClock,
+  search: faMagnifyingGlass,
+  bolt: faBolt,
+  arrow: faArrowRight,
+  plus: faPlus,
+  edit: faPenToSquare,
+  trash: faTrashCan,
+  view: faEye,
+} satisfies Record<string, IconDefinition>;
+
+export type AdminIconName = keyof typeof icons;
+
+export function AdminIcon({ name, className }: { name: AdminIconName; className?: string }) {
+  return <FontAwesomeIcon icon={icons[name]} className={className} aria-hidden="true" />;
+}

@@ -1,0 +1,1344 @@
+// CareCircle MindTogether — Prisma 6 schema
+// Identity is separate from clinical records. Authorization is enforced in
+// application services, not by this schema alone.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum DoctorVerificationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CredentialType {
+  LICENSE
+  DEGREE
+  IDENTITY_DOCUMENT
+  SPECIALTY_CERTIFICATE
+  OTHER
+}
+
+enum CredentialReviewStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  SUPERSEDED
+}
+
+enum InvitationDeliveryStatus {
+  NOT_SENT
+  SENT
+  FAILED
+}
+
+/// Declared by the doctor until an administrator verifies it after credential review.
+enum SpecialtyClaimStatus {
+  DECLARED
+  VERIFIED
+  REJECTED
+}
+
+/// Qualification shape is not limited to one medical specialty.
+enum QualificationKind {
+  MEDICAL_DEGREE
+  PROFESSIONAL_DIPLOMA
+  SPECIALIST_QUALIFICATION
+  BOARD_CERTIFICATION
+  OTHER
+}
+
+enum ConsultationMode {
+  ONLINE
+  IN_PERSON
+}
+
+enum AppointmentStatus {
+  PENDING_PAYMENT
+  EXPIRED_UNPAID
+  PENDING_APPROVAL
+  CONFIRMED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED_BY_PATIENT
+  CANCELLED_BY_DOCTOR
+  CANCELLED_BY_ADMIN
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum AppointmentBookingSource {
+  WEB
+  MOBILE
+  ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  REQUIRES_ACTION
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CANCELLED
+}
+
+enum GuardianRelationshipType {
+  PARENT
+  LEGAL_GUARDIAN
+  OTHER
+}
+
+enum GuardianAuthorizationStatus {
+  PENDING
+  AUTHORIZED
+  DENIED
+  REVOKED
+}
+
+/// Administrative registration values. Not a clinical assessment.
+enum Gender {
+  FEMALE
+  MALE
+  NON_BINARY
+  PREFER_NOT_TO_SAY
+}
+
+enum ConsentType {
+  PRIVACY_NOTICE
+  TERMS_OF_USE
+  DATA_PROCESSING
+  TELEHEALTH
+  GUARDIAN_AUTHORIZATION
+}
+
+enum ClinicalNoteKind {
+  PRIVATE_WORKING
+  PATIENT_SUMMARY
+}
+
+enum SummaryReleaseStatus {
+  NOT_RELEASED
+  RELEASED
+  WITHDRAWN
+}
+
+enum EncounterStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ClinicalNoteState {
+  DRAFT
+  FINALIZED
+}
+
+enum SummaryReleaseEvent {
+  RELEASED
+  WITHDRAWN
+}
+
+enum RecordAccessOutcome {
+  ALLOWED
+  DENIED
+}
+
+/// NOT_CONFIGURED means no malware scanner is connected. Do not treat it as a clean scan.
+enum ClinicalScanStatus {
+  NOT_CONFIGURED
+  CLEAN
+  REJECTED
+  FAILED
+}
+
+enum MedicalFilePurpose {
+  CREDENTIAL
+  CLINICAL_ATTACHMENT
+  CONSENT_DOCUMENT
+  OTHER
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+enum NotificationDeliveryStatus {
+  QUEUED
+  SENT
+  FAILED
+  READ
+  SUPPRESSED
+  CANCELLED
+}
+
+enum RecordAccessAction {
+  READ
+  CREATE
+  UPDATE
+  RELEASE
+  WITHDRAW
+  EXPORT
+  ARCHIVE
+}
+
+enum AuditActorType {
+  USER
+  SYSTEM
+}
+
+// ---------------------------------------------------------------------------
+// Identity and authorization
+// ---------------------------------------------------------------------------
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String
+  emailNormalized String     @unique
+  phoneE164       String?    @unique
+  passwordHash    String
+  status          UserStatus @default(PENDING_VERIFICATION)
+  timezone        String     @default("Africa/Freetown")
+  emailVerifiedAt DateTime?  @db.Timestamptz(6)
+  phoneVerifiedAt DateTime?  @db.Timestamptz(6)
+  lastLoginAt     DateTime?  @db.Timestamptz(6)
+  deletedAt       DateTime?  @db.Timestamptz(6)
+  /// Account photo bytes. Kept on the user row so it can be shown without private object storage.
+  profileImageBytes     Bytes?
+  profileImageType      String?
+  profileImageUpdatedAt DateTime? @db.Timestamptz(6)
+  createdAt       DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime   @updatedAt @db.Timestamptz(6)
+
+  roles                   UserRole[]
+  sessions                Session[]
+  emailVerificationTokens EmailVerificationToken[]
+  phoneVerificationTokens PhoneVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  consents                ConsentRecord[]
+  patientProfile          PatientProfile?
+  doctorProfile           DoctorProfile?
+  guardianRelationships   GuardianRelationship[]   @relation("GuardianUser")
+  notifications           Notification[]
+  notificationPreference  NotificationPreference?
+  auditLogs               AuditLog[]               @relation("AuditActor")
+  recordAccessLogs        RecordAccessLog[]        @relation("AccessActor")
+  summaryReleaseEvents    SummaryRelease[]         @relation("SummaryReleaseActor")
+  paymentsPaid            Payment[]                @relation("Payer")
+  appointmentEvents       AppointmentEvent[]
+  uploadedFiles           MedicalFile[]            @relation("FileUploader")
+  noteVersionsEdited      ClinicalNoteVersion[]
+  credentialsReviewed     DoctorCredential[]       @relation("CredentialReviewer")
+  summariesReleased       ClinicalNote[]           @relation("SummaryReleaserUser")
+  screeningVersions       ScreeningResponseVersion[] @relation("ScreeningEditor")
+  screeningAmendments     ScreeningAmendment[]
+  invitationsCreated      DoctorInvitation[]       @relation("InvitationCreator")
+  verificationEvents      DoctorVerificationEvent[] @relation("VerificationActor")
+  specialtiesVerified     DoctorSpecialty[]        @relation("SpecialtyVerifier")
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  /// Stable codes: PATIENT, DOCTOR, ADMIN, SUPER_ADMIN
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  users UserRole[]
+}
+
+model UserRole {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  roleId    String   @db.Uuid
+  grantedAt DateTime @default(now()) @db.Timestamptz(6)
+  grantedBy String?  @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+}
+
+model Session {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  tokenHash     String    @unique
+  userAgent     String?
+  ipAddressHash String?
+  expiresAt     DateTime  @db.Timestamptz(6)
+  revokedAt     DateTime? @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(6)
+  usedAt    DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PhoneVerificationToken {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  tokenHash    String    @unique
+  attemptCount Int       @default(0)
+  expiresAt    DateTime  @db.Timestamptz(6)
+  usedAt       DateTime? @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(6)
+  usedAt    DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ConsentRecord {
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @db.Uuid
+  consentType     ConsentType
+  documentVersion String
+  acceptedAt      DateTime    @db.Timestamptz(6)
+  withdrawnAt     DateTime?   @db.Timestamptz(6)
+  /// Optional. A null expiry means this version does not expire on its own.
+  expiresAt       DateTime?   @db.Timestamptz(6)
+  /// Optional reference to a stored consent document. Not a storage path.
+  evidenceRef     String?
+  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([userId, consentType, documentVersion])
+  @@index([consentType])
+  @@index([expiresAt])
+}
+
+/// Launch and operational flags. Minor registration/treatment must stay disabled
+/// until an explicit policy is approved and application checks enforce it.
+/// APPOINTMENT_PAYMENT_HOLD_MINUTES defaults to 10 (JSON number).
+model PlatformSetting {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  valueJson Json
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+}
+
+// ---------------------------------------------------------------------------
+// Patient and guardian
+// ---------------------------------------------------------------------------
+
+model PatientProfile {
+  id                   String    @id @default(uuid()) @db.Uuid
+  userId               String    @unique @db.Uuid
+  fullName             String
+  gender               Gender
+  nationality          String?
+  residentialAddress   String?
+  preferredLanguage    String?
+  /// Date only. Keep minor identity fields minimal.
+  dateOfBirth          DateTime? @db.Date
+  isDependent          Boolean   @default(false)
+  /// Contact for emergencies only. This is not a guardian and grants no record access.
+  emergencyContactName String?
+  createdAt            DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @db.Timestamptz(6)
+  archivedAt           DateTime? @db.Timestamptz(6)
+
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  guardianRelationships GuardianRelationship[] @relation("DependentPatient")
+  appointments          Appointment[]
+  encounters            Encounter[]
+  medicalFiles          MedicalFile[]
+  recordAccessLogs      RecordAccessLog[]
+  summaryReleases       SummaryRelease[]
+  screenings            ScreeningResponse[]
+  screeningConsents     ScreeningConsent[]
+  screeningAssessments  ScreeningAssessment[]
+
+  @@index([isDependent])
+}
+
+model GuardianRelationship {
+  id                 String                      @id @default(uuid()) @db.Uuid
+  guardianUserId     String                      @db.Uuid
+  dependentPatientId String                      @db.Uuid
+  relationshipType   GuardianRelationshipType
+  status             GuardianAuthorizationStatus @default(PENDING)
+  authorizedAt       DateTime?                   @db.Timestamptz(6)
+  revokedAt          DateTime?                   @db.Timestamptz(6)
+  /// Optional. A null expiry means the relationship does not expire on its own.
+  expiresAt          DateTime?                   @db.Timestamptz(6)
+  /// Does not grant automatic access to clinical notes.
+  notes              String?
+  createdAt          DateTime                    @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime                    @updatedAt @db.Timestamptz(6)
+
+  guardian  User           @relation("GuardianUser", fields: [guardianUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  dependent PatientProfile @relation("DependentPatient", fields: [dependentPatientId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([guardianUserId, dependentPatientId])
+  @@index([dependentPatientId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Doctors, credentials, specialties
+// ---------------------------------------------------------------------------
+
+model DoctorProfile {
+  id                       String                   @id @default(uuid()) @db.Uuid
+  userId                   String                   @unique @db.Uuid
+  fullName                 String
+  displayName              String
+  biography                String?
+  yearsExperience          Int?
+  qualificationKind        QualificationKind?
+  qualificationTitle       String?
+  qualificationInstitution String?
+  qualificationYear        Int?
+  licenseNumberNormalized  String?
+  /// Licensing or registration authority. Not assumed to be one national board.
+  licenseJurisdiction      String?
+  licenseExpiresOn         DateTime?                @db.Date
+  languages                String[]                 @default([])
+  consultationModes        ConsultationMode[]       @default([])
+  verificationStatus       DoctorVerificationStatus @default(DRAFT)
+  submittedAt              DateTime?                @db.Timestamptz(6)
+  verifiedAt               DateTime?                @db.Timestamptz(6)
+  rejectedAt               DateTime?                @db.Timestamptz(6)
+  suspendedAt              DateTime?                @db.Timestamptz(6)
+  rejectionReason          String?
+  correctionNotes          String?
+  returnedAt               DateTime?                @db.Timestamptz(6)
+  suspensionReason         String?
+  createdAt                DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime                 @updatedAt @db.Timestamptz(6)
+
+  user               User                      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  credentials        DoctorCredential[]
+  specialties        DoctorSpecialty[]
+  offerings          DoctorOffering[]
+  availabilityRules  DoctorAvailabilityRule[]
+  timeOff            DoctorTimeOff[]
+  appointments       Appointment[]
+  encounters         Encounter[]
+  notesAuthored      ClinicalNote[]            @relation("NoteAuthor")
+  invitations        DoctorInvitation[]
+  verificationEvents DoctorVerificationEvent[]
+  screeningReviews   ScreeningClinicalReview[]
+
+  @@unique([licenseJurisdiction, licenseNumberNormalized])
+  @@index([verificationStatus])
+}
+
+model DoctorCredential {
+  id               String                 @id @default(uuid()) @db.Uuid
+  doctorProfileId  String                 @db.Uuid
+  type             CredentialType
+  status           CredentialReviewStatus @default(PENDING)
+  storageKey       String                 @unique
+  originalFilename String?
+  mimeType         String
+  sizeBytes        Int
+  checksumSha256   String?
+  issuedOn         DateTime?              @db.Date
+  expiresOn        DateTime?              @db.Date
+  reviewedAt       DateTime?              @db.Timestamptz(6)
+  reviewedByUserId String?                @db.Uuid
+  reviewNotes      String?
+  archivedAt       DateTime?              @db.Timestamptz(6)
+  /// Set when a newer credential replaces this one. Reviewed rows stay for audit.
+  replacedByCredentialId String?          @unique @db.Uuid
+  createdAt        DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime               @updatedAt @db.Timestamptz(6)
+
+  doctor     DoctorProfile      @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  reviewedBy User?              @relation("CredentialReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  replacedBy DoctorCredential?  @relation("CredentialReplacement", fields: [replacedByCredentialId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  replaces   DoctorCredential?  @relation("CredentialReplacement")
+  files      MedicalFile[]
+
+  @@index([doctorProfileId])
+  @@index([status])
+  @@index([archivedAt])
+}
+
+model Specialty {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique
+  /// URL-safe identifier. The code stays stable for records created before slugs existed.
+  slug        String   @unique
+  name        String
+  /// Lowercased name so "Psychiatry" and "psychiatry" cannot both be stored.
+  nameKey     String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
+  doctors      DoctorSpecialty[]
+  offerings    DoctorOffering[]
+  appointments Appointment[]
+
+  @@index([isActive])
+}
+
+model DoctorSpecialty {
+  id               String               @id @default(uuid()) @db.Uuid
+  doctorProfileId  String               @db.Uuid
+  specialtyId      String               @db.Uuid
+  isPrimary        Boolean              @default(false)
+  claimStatus      SpecialtyClaimStatus @default(DECLARED)
+  verifiedAt       DateTime?            @db.Timestamptz(6)
+  verifiedByUserId String?              @db.Uuid
+  createdAt        DateTime             @default(now()) @db.Timestamptz(6)
+
+  doctor     DoctorProfile @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  specialty  Specialty     @relation(fields: [specialtyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  verifiedBy User?         @relation("SpecialtyVerifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([doctorProfileId, specialtyId])
+  @@index([specialtyId])
+  @@index([claimStatus])
+}
+
+/// Single-use doctor invitation. Only the token hash is stored.
+model DoctorInvitation {
+  id              String                   @id @default(uuid()) @db.Uuid
+  doctorProfileId String                   @db.Uuid
+  emailNormalized String
+  tokenHash       String                   @unique
+  status          InvitationStatus         @default(PENDING)
+  deliveryStatus  InvitationDeliveryStatus @default(NOT_SENT)
+  expiresAt       DateTime                 @db.Timestamptz(6)
+  acceptedAt      DateTime?                @db.Timestamptz(6)
+  revokedAt       DateTime?                @db.Timestamptz(6)
+  createdByUserId String                   @db.Uuid
+  createdAt       DateTime                 @default(now()) @db.Timestamptz(6)
+
+  doctor    DoctorProfile @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy User          @relation("InvitationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([doctorProfileId, status])
+  @@index([emailNormalized, status])
+  @@index([expiresAt])
+}
+
+model DoctorVerificationEvent {
+  id              String                    @id @default(uuid()) @db.Uuid
+  doctorProfileId String                    @db.Uuid
+  actorUserId     String?                   @db.Uuid
+  action          String
+  fromStatus      DoctorVerificationStatus?
+  toStatus        DoctorVerificationStatus
+  reason          String?
+  occurredAt      DateTime                  @default(now()) @db.Timestamptz(6)
+
+  doctor DoctorProfile @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  actor  User?         @relation("VerificationActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([doctorProfileId, occurredAt])
+  @@index([actorUserId])
+}
+
+// ---------------------------------------------------------------------------
+// Services, fees, locations
+// ---------------------------------------------------------------------------
+
+model ConsultationService {
+  id                      String            @id @default(uuid()) @db.Uuid
+  code                    String            @unique
+  slug                    String            @unique
+  name                    String
+  nameKey                 String            @unique
+  description             String?
+  /// Null means the service can be offered online or in person.
+  mode                    ConsultationMode?
+  defaultDurationMinutes  Int
+  /// Platform default fee in major units. Doctor offerings may charge a different price.
+  defaultFee              Decimal           @default(0) @db.Decimal(14, 2)
+  currency                String            @default("SLL") @db.Char(3)
+  preparationInstructions String?
+  isActive                Boolean           @default(true)
+  createdAt               DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime          @updatedAt @db.Timestamptz(6)
+
+  offerings    DoctorOffering[]
+  appointments Appointment[]
+
+  @@index([isActive])
+}
+
+model DoctorOffering {
+  id                    String           @id @default(uuid()) @db.Uuid
+  doctorProfileId       String           @db.Uuid
+  specialtyId           String           @db.Uuid
+  consultationServiceId String           @db.Uuid
+  mode                  ConsultationMode
+  durationMinutes       Int
+  /// Current doctor price in major units. Appointment rows keep their own snapshot.
+  price                 Decimal          @db.Decimal(14, 2)
+  /// Minor units kept in step with price (2 decimal places) for the existing appointment snapshot column.
+  priceAmountMinor      Int
+  currency              String           @default("SLL") @db.Char(3)
+  /// Optional description or preparation notes for this doctor's offering.
+  notes                 String?
+  isActive              Boolean          @default(true)
+  validFrom             DateTime?        @db.Timestamptz(6)
+  validTo               DateTime?        @db.Timestamptz(6)
+  createdAt             DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime         @updatedAt @db.Timestamptz(6)
+
+  doctor              DoctorProfile            @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  specialty           Specialty                @relation(fields: [specialtyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  consultationService ConsultationService      @relation(fields: [consultationServiceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  appointments        Appointment[]
+  availabilityRules   DoctorAvailabilityRule[]
+
+  @@index([doctorProfileId, isActive])
+  @@index([specialtyId])
+  @@index([consultationServiceId])
+}
+
+model Location {
+  id                 String    @id @default(uuid()) @db.Uuid
+  name               String
+  addressLine1       String
+  addressLine2       String?
+  locality           String
+  district           String
+  countryCode        String    @default("SL") @db.Char(2)
+  phone              String?
+  /// Entered by an administrator. No geocoding provider is configured.
+  latitude           Decimal?  @db.Decimal(8, 6)
+  longitude          Decimal?  @db.Decimal(9, 6)
+  accessInstructions String?
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(6)
+  deactivatedAt      DateTime? @db.Timestamptz(6)
+
+  appointments      Appointment[]
+  availabilityRules DoctorAvailabilityRule[]
+
+  @@index([isActive])
+  @@index([district])
+}
+
+// ---------------------------------------------------------------------------
+// Availability
+// ---------------------------------------------------------------------------
+
+model DoctorAvailabilityRule {
+  id              String            @id @default(uuid()) @db.Uuid
+  doctorProfileId String            @db.Uuid
+  /// ISO weekday: 1 = Monday ... 7 = Sunday
+  dayOfWeek       Int
+  localStartTime  DateTime          @db.Time(0)
+  localEndTime    DateTime          @db.Time(0)
+  timezone        String
+  mode            ConsultationMode?
+  locationId      String?           @db.Uuid
+  offeringId      String?           @db.Uuid
+  validFrom       DateTime?         @db.Date
+  validUntil      DateTime?         @db.Date
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime          @updatedAt @db.Timestamptz(6)
+
+  doctor   DoctorProfile   @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  location Location?       @relation(fields: [locationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  offering DoctorOffering? @relation(fields: [offeringId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([doctorProfileId, isActive])
+  @@index([locationId])
+}
+
+model DoctorTimeOff {
+  id              String   @id @default(uuid()) @db.Uuid
+  doctorProfileId String   @db.Uuid
+  startsAt        DateTime @db.Timestamptz(6)
+  endsAt          DateTime @db.Timestamptz(6)
+  reason          String?
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+
+  doctor DoctorProfile @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([doctorProfileId, startsAt, endsAt])
+}
+
+// ---------------------------------------------------------------------------
+// Appointments
+// ---------------------------------------------------------------------------
+
+model Appointment {
+  id                    String                   @id @default(uuid()) @db.Uuid
+  patientProfileId      String                   @db.Uuid
+  doctorProfileId       String                   @db.Uuid
+  specialtyId           String                   @db.Uuid
+  consultationServiceId String                   @db.Uuid
+  offeringId            String?                  @db.Uuid
+  locationId            String?                  @db.Uuid
+  mode                  ConsultationMode
+  status                AppointmentStatus        @default(PENDING_PAYMENT)
+  startsAt              DateTime                 @db.Timestamptz(6)
+  endsAt                DateTime                 @db.Timestamptz(6)
+  /// Required when status is PENDING_PAYMENT. SQL CHECKs + BEFORE INSERT trigger
+  /// (Prisma 6 cannot declare these). No database default: booking code sets expiry
+  /// from APPOINTMENT_PAYMENT_HOLD_MINUTES.
+  paymentHoldExpiresAt  DateTime?                @db.Timestamptz(6)
+  /// Fee copied when the appointment is booked. Later edits to service or offering prices must not change it.
+  feeAmount             Decimal                  @db.Decimal(14, 2)
+  feeAmountMinor        Int
+  currency              String                   @default("SLL") @db.Char(3)
+  bookingSource         AppointmentBookingSource @default(WEB)
+  followUpOfId          String?                  @db.Uuid
+  rescheduledFromId     String?                  @db.Uuid
+  cancelledAt           DateTime?                @db.Timestamptz(6)
+  cancellationReason    String?
+  /// What the patient says is wrong, in their own words. Not a diagnosis.
+  patientConcern        String?
+  checkedInAt           DateTime?                @db.Timestamptz(6)
+  completedAt           DateTime?                @db.Timestamptz(6)
+  createdAt             DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime                 @updatedAt @db.Timestamptz(6)
+
+  patient             PatientProfile      @relation(fields: [patientProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  doctor              DoctorProfile       @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  specialty           Specialty           @relation(fields: [specialtyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  consultationService ConsultationService @relation(fields: [consultationServiceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  offering            DoctorOffering?     @relation(fields: [offeringId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  location            Location?           @relation(fields: [locationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  followUpOf          Appointment?        @relation("AppointmentFollowUp", fields: [followUpOfId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  followUps           Appointment[]       @relation("AppointmentFollowUp")
+  rescheduledFrom     Appointment?        @relation("AppointmentReschedule", fields: [rescheduledFromId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  rescheduledTo       Appointment[]       @relation("AppointmentReschedule")
+  events              AppointmentEvent[]
+  payments            Payment[]
+  encounter           Encounter?
+  screenings          ScreeningResponse[]
+
+  @@index([patientProfileId, startsAt])
+  @@index([doctorProfileId, startsAt])
+  @@index([status])
+  @@index([status, paymentHoldExpiresAt])
+  @@index([locationId])
+  @@index([followUpOfId])
+  @@index([rescheduledFromId])
+}
+
+model AppointmentEvent {
+  id            String             @id @default(uuid()) @db.Uuid
+  appointmentId String             @db.Uuid
+  actorUserId   String?            @db.Uuid
+  fromStatus    AppointmentStatus?
+  toStatus      AppointmentStatus
+  occurredAt    DateTime           @default(now()) @db.Timestamptz(6)
+  /// Operational note only. Do not store clinical content.
+  detail        String?
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  actor       User?       @relation(fields: [actorUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([appointmentId, occurredAt])
+  @@index([actorUserId])
+}
+
+// ---------------------------------------------------------------------------
+// Payments
+// ---------------------------------------------------------------------------
+
+model Payment {
+  id                String        @id @default(uuid()) @db.Uuid
+  appointmentId     String        @db.Uuid
+  payerUserId       String        @db.Uuid
+  amountMinor       Int
+  currency          String        @default("SLL") @db.Char(3)
+  status            PaymentStatus @default(PENDING)
+  providerCode      String
+  providerReference String?
+  providerAccountId String?
+  createdAt         DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(6)
+
+  appointment Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  payer       User           @relation("Payer", fields: [payerUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  events      PaymentEvent[]
+
+  @@unique([providerCode, providerReference])
+  @@index([appointmentId])
+  @@index([payerUserId])
+  @@index([status])
+}
+
+model PaymentEvent {
+  id              String        @id @default(uuid()) @db.Uuid
+  paymentId       String        @db.Uuid
+  providerCode    String
+  providerEventId String
+  status          PaymentStatus
+  payloadSummary  Json?
+  occurredAt      DateTime      @default(now()) @db.Timestamptz(6)
+  receivedAt      DateTime      @default(now()) @db.Timestamptz(6)
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([providerCode, providerEventId])
+  @@index([paymentId, occurredAt])
+}
+
+// ---------------------------------------------------------------------------
+// Earlier visit questionnaires. Retained so existing rows are not dropped.
+// The Screening Centre below is the governed registry. These rows are not
+// offered as active instruments.
+// ---------------------------------------------------------------------------
+
+enum ScreeningInstrument {
+  PHQ9
+  GAD7
+  AUDIT
+  DAST10
+}
+
+model ScreeningResponse {
+  id                String               @id @default(uuid()) @db.Uuid
+  appointmentId     String               @db.Uuid
+  patientProfileId  String               @db.Uuid
+  instrument        ScreeningInstrument
+  instrumentVersion String
+  score             Int
+  band              String
+  safetyFlag        Boolean              @default(false)
+  submittedAt       DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime             @updatedAt @db.Timestamptz(6)
+
+  appointment Appointment                @relation(fields: [appointmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient     PatientProfile             @relation(fields: [patientProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  answers     ScreeningAnswer[]
+  versions    ScreeningResponseVersion[]
+
+  @@unique([appointmentId, instrument])
+  @@index([patientProfileId, submittedAt])
+  @@index([safetyFlag])
+}
+
+model ScreeningAnswer {
+  id         String @id @default(uuid()) @db.Uuid
+  responseId String @db.Uuid
+  itemIndex  Int
+  value      Int
+
+  response ScreeningResponse @relation(fields: [responseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([responseId, itemIndex])
+}
+
+model ScreeningResponseVersion {
+  id           String   @id @default(uuid()) @db.Uuid
+  responseId   String   @db.Uuid
+  version      Int
+  score        Int
+  band         String
+  safetyFlag   Boolean
+  answers      Json
+  editorUserId String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  response ScreeningResponse @relation(fields: [responseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  editor   User              @relation("ScreeningEditor", fields: [editorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([responseId, version])
+  @@index([editorUserId])
+}
+
+// ---------------------------------------------------------------------------
+// Mental Health Screening Centre. Instruments stay inactive until clinical
+// approval, licensing clearance, a versioned scoring specification, and any
+// required safety protocol are all recorded. Scoring rules are not edited here.
+// ---------------------------------------------------------------------------
+
+enum ScreeningCategory {
+  DEPRESSION
+  BIPOLAR
+  MANIA
+  ANXIETY
+  PSYCHOSIS
+  COGNITIVE
+  SUBSTANCE
+  OCD
+  PERSONALITY
+}
+
+enum ScreeningLicenseStatus {
+  NOT_REVIEWED
+  RESTRICTION_UNRESOLVED
+  CLEARED_FOR_CLINICAL_USE
+  PROHIBITED
+}
+
+enum ScreeningApprovalState {
+  PENDING_CLINICAL_REVIEW
+  CLINICALLY_APPROVED
+  REJECTED
+  RETIRED
+}
+
+enum ScreeningAvailability {
+  INACTIVE
+  ACTIVE
+  RETIRED
+}
+
+enum ScreeningAssessmentState {
+  IN_PROGRESS
+  SUBMITTED
+}
+
+model ScreeningTool {
+  id                     String                 @id @default(uuid()) @db.Uuid
+  code                   String                 @unique
+  name                   String
+  abbreviation           String
+  category               ScreeningCategory
+  purpose                String
+  intendedPopulation     String
+  instructions           String
+  language               String                 @default("en")
+  expectedMinutes        Int
+  sourceReference        String
+  licenseStatus          ScreeningLicenseStatus @default(NOT_REVIEWED)
+  approvalState          ScreeningApprovalState @default(PENDING_CLINICAL_REVIEW)
+  availability           ScreeningAvailability  @default(INACTIVE)
+  safetyProtocolRequired Boolean                @default(true)
+  safetyProtocolApproved Boolean                @default(false)
+  effectiveFrom          DateTime?              @db.Timestamptz(6)
+  retiredAt              DateTime?              @db.Timestamptz(6)
+  createdAt              DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime               @updatedAt @db.Timestamptz(6)
+
+  versions ScreeningToolVersion[]
+
+  @@index([category])
+  @@index([availability])
+  @@index([approvalState])
+}
+
+model ScreeningToolVersion {
+  id                      String   @id @default(uuid()) @db.Uuid
+  toolId                  String   @db.Uuid
+  version                 String
+  scoringAlgorithmVersion String?
+  /// Question definitions for this version.
+  items                   Json
+  /// Scoring rules for this version. A numeric total is stored when no bands were supplied.
+  scoringSpec             Json?
+  createdAt               DateTime @default(now()) @db.Timestamptz(6)
+
+  tool         ScreeningTool         @relation(fields: [toolId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  assessments  ScreeningAssessment[]
+
+  @@unique([toolId, version])
+}
+
+model ScreeningConsent {
+  id               String    @id @default(uuid()) @db.Uuid
+  patientProfileId String    @db.Uuid
+  documentVersion  String
+  acceptedAt       DateTime  @db.Timestamptz(6)
+  withdrawnAt      DateTime? @db.Timestamptz(6)
+
+  patient     PatientProfile        @relation(fields: [patientProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  assessments ScreeningAssessment[]
+
+  @@index([patientProfileId, acceptedAt])
+}
+
+model ScreeningAssessment {
+  id               String                   @id @default(uuid()) @db.Uuid
+  patientProfileId String                   @db.Uuid
+  versionId        String                   @db.Uuid
+  consentId        String                   @db.Uuid
+  state            ScreeningAssessmentState @default(IN_PROGRESS)
+  startedAt        DateTime                 @default(now()) @db.Timestamptz(6)
+  submittedAt      DateTime?                @db.Timestamptz(6)
+  /// Question text copied at submission so a later instrument version cannot rewrite history.
+  itemSnapshot     Json?
+
+  patient    PatientProfile              @relation(fields: [patientProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  version    ScreeningToolVersion        @relation(fields: [versionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  consent    ScreeningConsent            @relation(fields: [consentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  answers    ScreeningAssessmentAnswer[]
+  result     ScreeningAssessmentResult?
+  reviews    ScreeningClinicalReview[]
+  amendments ScreeningAmendment[]
+
+  @@index([patientProfileId, startedAt])
+  @@index([versionId])
+  @@index([state])
+}
+
+model ScreeningAssessmentAnswer {
+  id           String @id @default(uuid()) @db.Uuid
+  assessmentId String @db.Uuid
+  itemIndex    Int
+  value        Int
+
+  assessment ScreeningAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([assessmentId, itemIndex])
+}
+
+model ScreeningAssessmentResult {
+  id               String   @id @default(uuid()) @db.Uuid
+  assessmentId     String   @unique @db.Uuid
+  score            Int
+  maxScore         Int
+  band             String
+  algorithmVersion String
+  safetyFlag       Boolean  @default(false)
+  calculatedAt     DateTime @default(now()) @db.Timestamptz(6)
+
+  assessment ScreeningAssessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+}
+
+model ScreeningClinicalReview {
+  id              String   @id @default(uuid()) @db.Uuid
+  assessmentId    String   @db.Uuid
+  doctorProfileId String   @db.Uuid
+  interpretation  String
+  followUpNote    String?
+  reviewedAt      DateTime @default(now()) @db.Timestamptz(6)
+
+  assessment ScreeningAssessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  doctor     DoctorProfile       @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([assessmentId, reviewedAt])
+  @@index([doctorProfileId])
+}
+
+/// Append-only correction note. It does not rewrite answers or scores.
+model ScreeningAmendment {
+  id           String   @id @default(uuid()) @db.Uuid
+  assessmentId String   @db.Uuid
+  editorUserId String   @db.Uuid
+  reason       String
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  assessment ScreeningAssessment @relation(fields: [assessmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  editor     User                @relation(fields: [editorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([assessmentId, createdAt])
+  @@index([editorUserId])
+}
+
+// ---------------------------------------------------------------------------
+// Clinical records
+// ---------------------------------------------------------------------------
+
+model Encounter {
+  id               String          @id @default(uuid()) @db.Uuid
+  appointmentId    String          @unique @db.Uuid
+  patientProfileId String          @db.Uuid
+  doctorProfileId  String          @db.Uuid
+  /// Opened from the assigned visit. SCHEDULED is reserved and is not created automatically.
+  status           EncounterStatus @default(IN_PROGRESS)
+  startedAt        DateTime?       @db.Timestamptz(6)
+  endedAt          DateTime?       @db.Timestamptz(6)
+  archivedAt       DateTime?       @db.Timestamptz(6)
+  legalHold        Boolean         @default(false)
+  createdAt        DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime        @updatedAt @db.Timestamptz(6)
+
+  appointment     Appointment           @relation(fields: [appointmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient         PatientProfile        @relation(fields: [patientProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  doctor          DoctorProfile         @relation(fields: [doctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  notes           ClinicalNote[]
+  noteVersions    ClinicalNoteVersion[]
+  files           MedicalFile[]
+  summaryReleases SummaryRelease[]
+
+  @@index([patientProfileId, createdAt])
+  @@index([doctorProfileId])
+  @@index([status])
+}
+
+model ClinicalNote {
+  id                    String               @id @default(uuid()) @db.Uuid
+  encounterId           String               @db.Uuid
+  authorDoctorProfileId String               @db.Uuid
+  kind                  ClinicalNoteKind
+  /// DRAFT can be edited. FINALIZED changes require an amendment reason and a new version.
+  state                 ClinicalNoteState    @default(DRAFT)
+  /// Optimistic lock. Ordinary edits must send the revision they read.
+  revision              Int                  @default(1)
+  body                  String
+  summaryReleaseStatus  SummaryReleaseStatus @default(NOT_RELEASED)
+  releasedAt            DateTime?            @db.Timestamptz(6)
+  releasedByUserId      String?              @db.Uuid
+  finalizedAt           DateTime?            @db.Timestamptz(6)
+  archivedAt            DateTime?            @db.Timestamptz(6)
+  legalHold             Boolean              @default(false)
+  createdAt             DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime             @updatedAt @db.Timestamptz(6)
+
+  encounter  Encounter             @relation(fields: [encounterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  author     DoctorProfile         @relation("NoteAuthor", fields: [authorDoctorProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  releasedBy User?                 @relation("SummaryReleaserUser", fields: [releasedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  versions   ClinicalNoteVersion[]
+  releases   SummaryRelease[]
+  files      MedicalFile[]
+  accessLogs RecordAccessLog[]
+
+  @@index([encounterId])
+  @@index([authorDoctorProfileId])
+  @@index([kind, summaryReleaseStatus])
+  @@index([state])
+}
+
+model ClinicalNoteVersion {
+  id               String   @id @default(uuid()) @db.Uuid
+  clinicalNoteId   String   @db.Uuid
+  encounterId      String   @db.Uuid
+  version          Int
+  body             String
+  /// Required when a finalized note is amended. Empty on ordinary draft saves.
+  amendmentReason  String?
+  editorUserId     String   @db.Uuid
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+
+  note      ClinicalNote @relation(fields: [clinicalNoteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  encounter Encounter    @relation(fields: [encounterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  editor    User         @relation(fields: [editorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([clinicalNoteId, version])
+  @@index([editorUserId])
+  @@index([encounterId])
+}
+
+/// Append-only release history. Withdrawing a summary inserts a row. It does not rewrite the release row.
+model SummaryRelease {
+  id               String              @id @default(uuid()) @db.Uuid
+  clinicalNoteId   String              @db.Uuid
+  version          Int
+  patientProfileId String              @db.Uuid
+  encounterId      String              @db.Uuid
+  actorUserId      String              @db.Uuid
+  event            SummaryReleaseEvent
+  occurredAt       DateTime            @default(now()) @db.Timestamptz(6)
+
+  note      ClinicalNote   @relation(fields: [clinicalNoteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient   PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  encounter Encounter      @relation(fields: [encounterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  actor     User           @relation("SummaryReleaseActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([clinicalNoteId, occurredAt])
+  @@index([patientProfileId, occurredAt])
+  @@index([encounterId])
+  @@index([actorUserId])
+}
+
+/// Append-only. The RecordAccessLog_no_mutation trigger rejects UPDATE and DELETE.
+model RecordAccessLog {
+  id               String             @id @default(uuid()) @db.Uuid
+  actorUserId      String             @db.Uuid
+  patientProfileId String             @db.Uuid
+  clinicalNoteId   String?            @db.Uuid
+  entityType       String
+  entityId         String             @db.Uuid
+  action           RecordAccessAction
+  outcome          RecordAccessOutcome @default(ALLOWED)
+  /// Short machine reason such as not_assigned. Never note text.
+  reason           String?
+  requestId        String?
+  occurredAt       DateTime           @default(now()) @db.Timestamptz(6)
+
+  actor   User           @relation("AccessActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  note    ClinicalNote?  @relation(fields: [clinicalNoteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([patientProfileId, occurredAt])
+  @@index([actorUserId, occurredAt])
+  @@index([entityType, entityId])
+  @@index([requestId])
+  @@index([outcome, occurredAt])
+}
+
+model MedicalFile {
+  id                 String             @id @default(uuid()) @db.Uuid
+  storageKey         String             @unique
+  originalFilename   String?
+  mimeType           String
+  sizeBytes          Int
+  checksumSha256     String?
+  purpose            MedicalFilePurpose
+  uploaderUserId     String             @db.Uuid
+  patientProfileId   String?            @db.Uuid
+  encounterId        String?            @db.Uuid
+  clinicalNoteId     String?            @db.Uuid
+  doctorCredentialId String?            @db.Uuid
+  /// True only after an authorized clinician releases the summary this file is attached to.
+  patientVisible     Boolean            @default(false)
+  scanStatus         ClinicalScanStatus @default(NOT_CONFIGURED)
+  legalHold          Boolean            @default(false)
+  /// Hides the file from download. Bytes stay in private storage.
+  deletedAt          DateTime?          @db.Timestamptz(6)
+  createdAt          DateTime           @default(now()) @db.Timestamptz(6)
+
+  uploader   User              @relation("FileUploader", fields: [uploaderUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  patient    PatientProfile?   @relation(fields: [patientProfileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  encounter  Encounter?        @relation(fields: [encounterId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  note       ClinicalNote?     @relation(fields: [clinicalNoteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  credential DoctorCredential? @relation(fields: [doctorCredentialId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([patientProfileId])
+  @@index([uploaderUserId])
+  @@index([encounterId])
+  @@index([clinicalNoteId])
+  @@index([doctorCredentialId])
+  @@index([patientProfileId, patientVisible])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications and audit
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id          String                     @id @default(uuid()) @db.Uuid
+  recipientId String                     @db.Uuid
+  channel     NotificationChannel
+  type        String
+  title       String
+  /// Safe preview only. Never include clinical note bodies.
+  preview     String?
+  entityType  String?
+  entityId    String?                    @db.Uuid
+  status            NotificationDeliveryStatus @default(QUEUED)
+  readAt            DateTime?                  @db.Timestamptz(6)
+  createdAt         DateTime                   @default(now()) @db.Timestamptz(6)
+  /// One business event, recipient, and channel. Null on rows created before this column existed.
+  idempotencyKey    String?                    @unique
+  attemptCount      Int                        @default(0)
+  nextRetryAt       DateTime?                  @db.Timestamptz(6)
+  providerMessageId String?
+  /// Safe machine code such as not_configured or provider_failed. Never a secret or message body.
+  errorCode         String?
+
+  recipient User                  @relation(fields: [recipientId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  attempts  NotificationAttempt[]
+
+  @@index([recipientId, createdAt])
+  @@index([status])
+  @@index([status, nextRetryAt])
+}
+
+model NotificationAttempt {
+  id                String                     @id @default(uuid()) @db.Uuid
+  notificationId    String                     @db.Uuid
+  attemptNumber     Int
+  status            NotificationDeliveryStatus
+  providerMessageId String?
+  errorCode         String?
+  attemptedAt       DateTime                   @default(now()) @db.Timestamptz(6)
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([notificationId, attemptNumber])
+  @@index([notificationId, attemptedAt])
+}
+
+model NotificationPreference {
+  userId         String   @id @db.Uuid
+  emailReminders Boolean  @default(true)
+  smsReminders   Boolean  @default(true)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+/// Append-only. The AuditLog_no_mutation trigger rejects UPDATE and DELETE.
+model AuditLog {
+  id          String         @id @default(uuid()) @db.Uuid
+  actorUserId String?        @db.Uuid
+  actorType   AuditActorType @default(USER)
+  action      String
+  entityType  String
+  entityId    String         @db.Uuid
+  requestId   String?
+  /// Safe operational metadata only. Never passwords, tokens, or note bodies.
+  metadata    Json?
+  occurredAt  DateTime       @default(now()) @db.Timestamptz(6)
+
+  actor User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([actorUserId, occurredAt])
+  @@index([entityType, entityId])
+  @@index([action, occurredAt])
+  @@index([requestId])
+}

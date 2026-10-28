@@ -1,0 +1,27 @@
+"use client";
+
+import { useActionState } from "react";
+import { bookSlotAction, type BookState } from "../actions";
+import "../book.css";
+
+const initial: BookState = {};
+
+export function ConfirmBookingForm({ offeringId, startsAt, locationId }: { offeringId: string; startsAt: string; locationId: string }) {
+  const [state, action, pending] = useActionState(bookSlotAction, initial);
+  return (
+    <form action={action} className="grid gap-3">
+      <input type="hidden" name="offeringId" value={offeringId} />
+      <input type="hidden" name="startsAt" value={startsAt} />
+      <input type="hidden" name="locationId" value={locationId} />
+      <label className="book-concern">
+        What is wrong?
+        <span>Tell the doctor what is wrong before you send this request. The doctor reads it before approving or declining.</span>
+        <textarea name="concern" required minLength={10} maxLength={500} rows={4} placeholder="Describe the problem in your own words." />
+      </label>
+      <button className="book-confirm" type="submit" disabled={pending}>
+        {pending ? "Sending…" : "Request appointment"}
+      </button>
+      {state.message ? <p className="book-alert" role="alert">{state.message}</p> : null}
+    </form>
+  );
+}

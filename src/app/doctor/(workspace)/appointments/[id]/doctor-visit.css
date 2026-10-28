@@ -1,0 +1,502 @@
+.doc-visit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.doc-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  color: #0f766e;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.doc-back:hover {
+  color: #115e59;
+}
+
+.doc-hero {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
+  padding: 1.15rem 1.2rem 1.25rem;
+  border: 1px solid #c5e6dc;
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.7), transparent 28%),
+    linear-gradient(135deg, #d8f3ee 0%, #e7f4f2 46%, #d5eee8 100%);
+  box-shadow: 0 0.45rem 1.4rem rgba(15, 118, 110, 0.1);
+}
+
+.doc-hero-top,
+.doc-patient,
+.doc-actions,
+.doc-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem 0.85rem;
+}
+
+.doc-hero-top {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.doc-kicker {
+  margin: 0 0 0.2rem;
+  color: #0f766e;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doc-hero h1,
+.doc-panel h2,
+.doc-timeline h2 {
+  margin: 0;
+  color: #0c2b45;
+  letter-spacing: -0.03em;
+}
+
+.doc-hero h1 {
+  font-size: clamp(1.45rem, 2.4vw, 1.9rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.doc-lead,
+.doc-quiet {
+  margin: 0.35rem 0 0;
+  color: #3a5560;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.doc-patient {
+  padding: 0.35rem 0.45rem 0.35rem 0.35rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.doc-patient strong {
+  display: block;
+  color: #0c2b45;
+  font-size: 1.02rem;
+}
+
+.doc-patient span,
+.doc-fact small,
+.doc-ref dt {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.doc-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 1.7rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0c2b45;
+  padding: 0.15rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.doc-chip.teal {
+  background: #0f766e;
+  color: #fff;
+}
+
+.doc-chip.amber {
+  background: #fff6e8;
+  color: #9a6700;
+}
+
+.doc-facts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.doc-fact {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 0.75rem 0.85rem;
+}
+
+.doc-fact strong {
+  color: #17324d;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.doc-ref {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  margin: 0;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.7rem 0.85rem;
+}
+
+.doc-ref dd {
+  margin: 0;
+  color: #17324d;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.doc-concern {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  border-radius: 0.95rem;
+  background: #f4fbf9;
+  padding: 0.85rem 0.95rem;
+}
+
+.doc-concern h2,
+.doc-concern h3 {
+  margin: 0;
+  color: #0c2b45;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.doc-concern p {
+  margin: 0;
+  color: #17324d;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.doc-banner {
+  margin: 0;
+  border-radius: 0.95rem;
+  background: #fff;
+  color: #17324d;
+  padding: 0.8rem 0.9rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.doc-place {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  color: #3a5560;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.doc-place strong {
+  color: #0c2b45;
+}
+
+.doc-btn,
+.doc-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.75rem;
+  border-radius: 0.8rem;
+  padding: 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.doc-btn {
+  border: 0;
+  background: #0f766e;
+  color: #fff;
+}
+
+.doc-btn:hover {
+  background: #115e59;
+}
+
+.doc-btn-ghost {
+  border: 1px solid #dce7f0;
+  background: #fff;
+  color: #0c2b45;
+}
+
+.doc-layout {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.doc-panel,
+.doc-forms form {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  border: 1px solid #dce7f0;
+  border-radius: 1.15rem;
+  background: #fff;
+  padding: 1rem 1.05rem 1.1rem;
+  box-shadow: 0 0.2rem 0.7rem rgba(12, 43, 69, 0.04);
+}
+
+.doc-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(12, 43, 69, 0.48);
+}
+
+.doc-dialog {
+  display: grid;
+  gap: 0.85rem;
+  width: min(44rem, 100%);
+  max-height: min(92dvh, 48rem);
+  overflow: auto;
+  border-radius: 1.15rem;
+  background: #fff;
+  padding: 1.05rem 1.1rem 1.15rem;
+  box-shadow: 0 1.25rem 3rem rgba(12, 43, 69, 0.22);
+  outline: none;
+}
+
+.doc-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.doc-dialog-kicker {
+  margin: 0;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.doc-dialog-head h2 {
+  margin: 0.15rem 0 0;
+  color: #0c2b45;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.doc-dialog-head p:last-child {
+  margin: 0.35rem 0 0;
+  color: #4d6474;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.doc-dialog-close {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  background: #f3f8fc;
+  color: #0c2b45;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.doc-dialog-close:hover {
+  background: #e7f4f2;
+  color: #0f766e;
+}
+
+.doc-dialog-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.doc-dialog-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.15rem;
+  border: 1px solid #dce7f0;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 0.75rem;
+  color: #0c2b45;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.doc-dialog-day-on,
+.doc-dialog-day:hover {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #fff;
+}
+
+.doc-forms h2 {
+  margin: 0;
+  color: #0c2b45;
+  font-size: 1.02rem;
+  font-weight: 800;
+}
+
+.doc-forms {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.doc-forms label,
+.doc-forms input,
+.doc-forms textarea,
+.doc-forms select,
+.doc-forms button {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.doc-timeline ol {
+  display: grid;
+  gap: 0;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doc-timeline li {
+  display: grid;
+  grid-template-columns: 0.85rem minmax(0, 1fr);
+  gap: 0.75rem;
+  color: #17324d;
+  font-size: 0.88rem;
+}
+
+.doc-timeline li span {
+  position: relative;
+  display: block;
+}
+
+.doc-timeline li span::before {
+  content: "";
+  position: absolute;
+  top: 0.35rem;
+  left: 0.15rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #0f766e;
+}
+
+.doc-timeline li span::after {
+  content: "";
+  position: absolute;
+  top: 1rem;
+  bottom: -0.2rem;
+  left: 0.38rem;
+  width: 1px;
+  background: #dce7f0;
+}
+
+.doc-timeline li:last-child span::after {
+  display: none;
+}
+
+.doc-timeline time,
+.doc-timeline small,
+.doc-timeline strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.doc-timeline time,
+.doc-timeline small {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.doc-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  color: #17324d;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 720px) {
+  .doc-hero {
+    padding: 1rem;
+  }
+
+  .doc-hero-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .doc-actions > .doc-btn,
+  .doc-actions > .doc-btn-ghost {
+    flex: 1 1 100%;
+  }
+}
+
+@media (min-width: 721px) {
+  .doc-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .doc-facts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .doc-layout {
+    grid-template-columns: minmax(0, 1.5fr) minmax(16rem, 0.72fr);
+  }
+
+  .doc-timeline {
+    position: sticky;
+    top: 1rem;
+  }
+}
