@@ -1173,6 +1173,104 @@
 .offerings-col-status { width: 12%; }
 .offerings-col-actions { width: 10%; }
 
+.fee-col-service { width: 28%; }
+.fee-col-visit { width: 14%; }
+.fee-col-status { width: 16%; }
+.fee-col-amount { width: 16%; }
+.fee-col-currency { width: 12%; }
+.fee-col-save { width: 14%; }
+
+.fee-schedule-note {
+  margin: 0;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid #e3e6f0;
+  background: #fff;
+  color: #5d6e84;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.fee-currency-chip {
+  color: #12304a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fee-row-service td {
+  background: #f4f7fb;
+  border-top: 1px solid #d7dee8;
+}
+
+.fee-row-doctor td:first-child {
+  box-shadow: inset 3px 0 0 #0f766e;
+}
+
+.fee-name,
+.fee-doctor {
+  display: block;
+  color: #12304a;
+  font-weight: 800;
+}
+
+.fee-field {
+  width: 100%;
+  min-height: 2.15rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #d5dbe6;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #12304a;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.fee-field:focus {
+  border-color: #0f766e;
+  outline: 2px solid rgba(15, 118, 110, 0.25);
+}
+
+.fee-currency {
+  text-transform: uppercase;
+}
+
+.fee-save {
+  min-height: 2.15rem;
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: #0f766e;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.fee-save:hover {
+  background: #0b5f59;
+}
+
+.fee-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.fee-message {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.fee-message.is-ok {
+  color: #0b5f59;
+}
+
+.fee-message.is-error {
+  color: #9b2330;
+}
+
 .users-col-account { width: 34%; }
 .users-col-role { width: 16%; }
 .users-col-status { width: 18%; }
@@ -1928,6 +2026,10 @@ button.users-email {
 
   .users-filters.offerings-filters {
     grid-template-columns: minmax(11rem, 1.4fr) repeat(4, minmax(8rem, 1fr)) auto;
+  }
+
+  .users-filters.pricing-filters {
+    grid-template-columns: minmax(0, 1fr) 14rem;
   }
 
   .users-table {
