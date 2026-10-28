@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CatalogPager, EmptyCatalog, PageHeader, catalogQuery } from "@/components/admin/catalog-ui";
+import { CatalogPager, catalogQuery } from "@/components/admin/catalog-ui";
 import { LiveQueryForm } from "@/components/live-query";
 import { textInputClass } from "@/components/form-classes";
 import { RecordsUnavailable } from "@/components/records-unavailable";
@@ -9,7 +9,7 @@ import { countryName } from "@/lib/catalog/countries";
 import { loadLocations, readPage, readParam } from "@/lib/catalog/queries";
 import { getSystemName } from "@/lib/brand/system-name";
 import { prisma } from "@/lib/db/prisma";
-import { CreateLocationForm, LocationEditor } from "./location-forms";
+import { LocationsBoard } from "./location-forms";
 
 export const metadata: Metadata = { title: "Locations" };
 export const dynamic = "force-dynamic";
@@ -23,40 +23,37 @@ export default async function LocationsPage({
   const params = await searchParams;
   const q = readParam(params.q);
   const status = readParam(params.status);
-  const district = readParam(params.district);
   const page = readPage(params.page);
-  const result = await loadLocations(prisma, { q, status, district, page });
+  const result = await loadLocations(prisma, { q, status, page });
   if (!result.ok) return <RecordsUnavailable code={result.code} />;
-  const query = catalogQuery("/admin/locations", { q, status, district });
+  const query = catalogQuery("/admin/locations", { q, status });
   const systemName = await getSystemName();
   return (
-    <section className="grid gap-6">
-      <PageHeader
-        eyebrow="Catalog"
-        title="Platform locations"
-        description={`${systemName} manages its own consultation locations. New locations default to Sierra Leone, and other countries can be added. Inactive locations stay on past appointments and are not offered for new ones.`}
-      />
+    <main className="users-page">
       <LiveQueryForm
         pathname="/admin/locations"
-        className="grid gap-3 rounded-2xl border border-brand-line bg-white p-4 md:grid-cols-4"
+        className="users-filters pricing-filters"
         fields={[
-          { name: "q", label: "Search", kind: "text", value: q, placeholder: "Name, city, or address", labelClassName: "text-sm font-medium md:col-span-2", inputClassName: `${textInputClass} mt-1` },
-          { name: "district", label: "District", kind: "select", value: district, labelClassName: "text-sm font-medium", inputClassName: `${textInputClass} mt-1`, options: [{ value: "", label: "All districts" }, ...result.districts.map((item) => ({ value: item, label: item }))] },
-          { name: "status", label: "Status", kind: "select", value: status || "ALL", labelClassName: "text-sm font-medium", inputClassName: `${textInputClass} mt-1`, options: [
-            { value: "ALL", label: "All" },
-            { value: "ACTIVE", label: "Active" },
-            { value: "INACTIVE", label: "Inactive" },
-          ] },
+          { name: "q", label: "Search", kind: "text", value: q, placeholder: "Name or city", inputClassName: textInputClass },
+          {
+            name: "status",
+            label: "Status",
+            kind: "select",
+            value: status || "ALL",
+            inputClassName: textInputClass,
+            options: [
+              { value: "ALL", label: "All statuses" },
+              { value: "ACTIVE", label: "Active" },
+              { value: "INACTIVE", label: "Inactive" },
+            ],
+          },
         ]}
       />
-      <CreateLocationForm systemName={systemName} />
-      {result.rows.length === 0 ? <EmptyCatalog>No locations match these filters.</EmptyCatalog> : null}
-      <div className="grid gap-4">
-        {result.rows.map((location) => (
-          <LocationEditor key={location.id} systemName={systemName} location={{ ...location, countryLabel: countryName(location.countryCode) }} />
-        ))}
-      </div>
+      <LocationsBoard
+        systemName={systemName}
+        locations={result.rows.map((location) => ({ ...location, countryLabel: countryName(location.countryCode) }))}
+      />
       <CatalogPager page={result.page} pageSize={result.pageSize} total={result.total} query={query} label="location" />
-    </section>
+    </main>
   );
 }

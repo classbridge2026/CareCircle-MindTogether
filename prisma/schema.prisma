@@ -675,7 +675,7 @@ model Location {
   district           String
   countryCode        String    @default("SL") @db.Char(2)
   phone              String?
-  /// Entered by an administrator. No geocoding provider is configured.
+  /// Set when an administrator verifies the place. The map check supplies these coordinates.
   latitude           Decimal?  @db.Decimal(8, 6)
   longitude          Decimal?  @db.Decimal(9, 6)
   accessInstructions String?

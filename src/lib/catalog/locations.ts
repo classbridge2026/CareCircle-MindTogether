@@ -25,11 +25,8 @@ function denied(actor: Actor): CatalogResult | null {
 function parseCoordinates(latitude: string, longitude: string): { ok: true; latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null } | { ok: false; message: string } {
   const latText = latitude.trim();
   const lngText = longitude.trim();
-  if (!latText && !lngText) {
-    return { ok: true, latitude: null, longitude: null };
-  }
   if (!latText || !lngText || !COORDINATE_PATTERN.test(latText) || !COORDINATE_PATTERN.test(lngText)) {
-    return { ok: false, message: "Enter both latitude and longitude, or leave both blank. Coordinates are not checked against a map." };
+    return { ok: false, message: "Verify the address on the map before saving this location." };
   }
   const lat = new Prisma.Decimal(latText);
   const lng = new Prisma.Decimal(lngText);
@@ -54,14 +51,14 @@ function parseLocation(input: {
 }) {
   const name = cleanRequiredText(input.name, 2, 120, "a location name");
   if (!name.ok) return name;
-  const addressLine1 = cleanRequiredText(input.addressLine1, 3, 200, "an address");
-  if (!addressLine1.ok) return addressLine1;
+  const addressLine1 = cleanRequiredText(input.addressLine1, 3, 200, "a verified place");
+  if (!addressLine1.ok) return { ok: false as const, message: "Verify the address on the map before saving this location." };
   const addressLine2 = cleanOptionalText(input.addressLine2, 200);
   if (!addressLine2.ok) return addressLine2;
   const locality = cleanRequiredText(input.locality, 2, 80, "a city or town");
   if (!locality.ok) return locality;
-  const district = cleanRequiredText(input.district, 2, 80, "a district");
-  if (!district.ok) return district;
+  const district = cleanRequiredText(input.district, 2, 80, "a verified area");
+  if (!district.ok) return { ok: false as const, message: "Verify the address on the map before saving this location." };
   const countryCode = parseCountryCode(input.countryCode, input.countryCodeOther);
   if (!countryCode) return { ok: false as const, message: "Enter a two-letter country code. Sierra Leone is SL." };
   const phoneText = input.phone.trim();
@@ -141,7 +138,7 @@ export async function createLocation(
   } catch (error) {
     return { ok: false, message: catalogFailure(error, "A location with that name already exists in this city and country.") };
   }
-  return { ok: true, message: `${parsed.data.name} was added. The address was stored as entered and was not verified on a map.` };
+  return { ok: true, message: `${parsed.data.name} was added and shown on the map.` };
 }
 
 export async function updateLocation(

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createPaymentHold } from "@/lib/appointments/payment-holds";
 import { createSpecialty, updateSpecialty } from "@/lib/doctors/specialties";
 import { updateDefaultCurrency } from "./configuration";
+import { placesFromNominatim } from "./geocode";
 import { createLocation, updateLocation } from "./locations";
 import { decimalToMinorUnits, formatMoneyAmount, parseMoney, sameMoney, snapshotAppointmentFee } from "./money";
 import { createDoctorOffering, updateDoctorOffering, updateOfferingFee } from "./offerings";
@@ -24,6 +25,49 @@ const closedDb = new Proxy(
     },
   },
 );
+
+describe("location map verification", () => {
+  it("turns a map result into a place without asking for coordinates", () => {
+    const places = placesFromNominatim(
+      [
+        {
+          place_id: 9,
+          lat: "8.484444",
+          lon: "-13.234567",
+          display_name: "Wilberforce, Freetown, Western Area, Sierra Leone",
+          address: { road: "Wilberforce", city: "Freetown", state: "Western Area", country: "Sierra Leone" },
+        },
+      ],
+      "Freetown",
+    );
+    expect(places).toHaveLength(1);
+    expect(places[0]?.title).toBe("Wilberforce");
+    expect(places[0]?.detail).toContain("Freetown");
+    expect(places[0]?.latitude).toBe("8.484444");
+    expect(places[0]?.district).toBe("Western Area");
+  });
+
+  it("requires a verified map point before a location is saved", async () => {
+    const result = await createLocation(
+      {
+        name: "Wilberforce",
+        addressLine1: "",
+        addressLine2: "",
+        locality: "Freetown",
+        district: "",
+        countryCode: "SL",
+        countryCodeOther: "",
+        phone: "",
+        latitude: "",
+        longitude: "",
+        accessInstructions: "",
+      },
+      { db: closedDb as never, actor: admin },
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.message).toContain("map");
+  });
+});
 
 describe("catalog money", () => {
   it("adds decimal money exactly and rejects invalid amounts", () => {
