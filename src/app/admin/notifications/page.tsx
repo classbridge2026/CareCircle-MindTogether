@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CatalogPager, EmptyCatalog, PageHeader, catalogQuery } from "@/components/admin/catalog-ui";
-import { RecordTable, TableCell } from "@/components/admin/portal-ui";
+import { CatalogPager, catalogQuery } from "@/components/admin/catalog-ui";
+import { AdminIcon, type AdminIconName } from "@/components/admin/admin-icons";
 import { RecordsUnavailable } from "@/components/records-unavailable";
 import { StatusBadge } from "@/components/status-badge";
 import { ADMIN_ROLE_CODE, SUPER_ADMIN_ROLE_CODE } from "@/lib/auth/constants";
@@ -19,6 +19,28 @@ import { ClearNotificationsForm, MarkAllReadForm, MarkReadForm } from "./notific
 export const metadata: Metadata = { title: "Notifications" };
 export const dynamic = "force-dynamic";
 
+function words(value: string) {
+  return value
+    .toLowerCase()
+    .split(/[._\s]+/)
+    .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part))
+    .join(" ");
+}
+
+function channelLabel(channel: string) {
+  if (channel === "EMAIL") return "Email";
+  if (channel === "SMS") return "Text";
+  return "In app";
+}
+
+function deliveryTone(status: string): "teal" | "amber" | "red" | "navy" | "slate" {
+  if (status === "SENT" || status === "READ") return "teal";
+  if (status === "FAILED") return "red";
+  if (status === "QUEUED") return "amber";
+  if (status === "SUPPRESSED" || status === "CANCELLED") return "navy";
+  return "slate";
+}
+
 export default async function NotificationsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const user = await requireStoredRoles([ADMIN_ROLE_CODE, SUPER_ADMIN_ROLE_CODE]);
   const params = await searchParams;
@@ -34,105 +56,166 @@ export default async function NotificationsPage({ searchParams }: { searchParams
     }),
   ]);
   if (!result.ok) return <RecordsUnavailable code={result.code} />;
+  const emailReady = emailProviderConfigured();
   return (
-    <main className="grid gap-6">
+    <main className="users-page">
       <MarkViewedNotifications ids={result.notifications.filter((note) => !note.readAt).map((note) => note.id)} />
-      <PageHeader eyebrow="Platform" title="Notifications" description="Your own notifications are listed first. The delivery log shows channel status for the clinic. Previews do not include clinical note text." />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-brand-muted">{result.unread} unread</p>
-        <div className="flex flex-wrap gap-2">
-          {result.unread > 0 ? <MarkAllReadForm /> : null}
-          {result.total > 0 ? <ClearNotificationsForm /> : null}
-        </div>
-      </div>
-      {result.notifications.length === 0 ? (
-        <EmptyCatalog>You have no notifications.</EmptyCatalog>
-      ) : (
-        <ul className="grid gap-3">
-          {result.notifications.map((note) => (
-            <li key={note.id} className="rounded-2xl border border-brand-line bg-white px-4 py-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-brand-navy">{note.title}</p>
-                  {note.preview ? <p className="mt-1 text-sm leading-6 text-brand-muted">{note.preview}</p> : null}
-                  <p className="mt-2 text-xs text-brand-muted">
-                    {note.channel} · {note.type} · {formatPlatformWhen(new Date(note.createdAt))}
-                  </p>
-                  {note.entityType === "DoctorProfile" && note.entityId ? (
-                    <Link className="mt-2 inline-flex text-sm font-semibold text-brand-teal" href={`/admin/doctors/${note.entityId}`}>
-                      Review and verify
-                    </Link>
-                  ) : null}
-                </div>
-                <div className="flex items-center gap-3">
-                  <StatusBadge tone={note.readAt ? "slate" : note.status === "FAILED" ? "red" : "teal"}>{note.readAt ? "Read" : note.status === "FAILED" ? "Failed" : "Unread"}</StatusBadge>
-                  {note.readAt ? null : <MarkReadForm notificationId={note.id} />}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      <CatalogPager page={result.page} pageSize={result.pageSize} total={result.total} query={catalogQuery("/admin/notifications", {})} label="notification" />
-      <section className="grid gap-3">
-        <p className="text-sm leading-6 text-brand-muted">
-          In-app storage is always available. Email is {emailProviderConfigured() ? "configured" : "not configured"}. A sent email status means Gmail accepted the message, not that the mailbox confirmed it. Text messages are not sent.
-        </p>
-        {deliveries.unavailable ? <p className="users-empty">Per-channel attempt history needs the notification migration. It has not been applied.</p> : null}
-        {deliveries.ok && !deliveries.unavailable ? (
-          <RecordTable
-            title="Delivery log"
-            caption="Notification deliveries"
-            wide
-            empty={deliveries.rows.length === 0 ? "No deliveries match this view." : undefined}
-            columns={
-              <colgroup>
-                <col className="delivery-col-when" />
-                <col className="delivery-col-recipient" />
-                <col className="delivery-col-type" />
-                <col className="delivery-col-channel" />
-                <col className="delivery-col-status" />
-                <col className="delivery-col-attempts" />
-                <col className="delivery-col-error" />
-                <col className="delivery-col-action" />
-              </colgroup>
-            }
-            head={
-              <>
-                <th>When</th>
-                <th>Recipient</th>
-                <th>Type</th>
-                <th>Channel</th>
-                <th>Status</th>
-                <th>Attempts</th>
-                <th>Error</th>
-                <th>Actions</th>
-              </>
-            }
-            rows={deliveries.rows.map((row) => (
-              <tr key={row.id}>
-                <TableCell label="When">{formatPlatformWhen(new Date(row.createdAt))}</TableCell>
-                <TableCell label="Recipient">{row.recipient}</TableCell>
-                <TableCell label="Type">{row.type}</TableCell>
-                <TableCell label="Channel">{row.channel}</TableCell>
-                <TableCell label="Status">{row.status}</TableCell>
-                <TableCell label="Attempts">{row.attemptCount}</TableCell>
-                <TableCell label="Error">{row.errorCode ?? "None"}</TableCell>
-                <TableCell label="Actions">
-                  {row.retryable ? (
-                    <form action={retryDeliveryAction}>
-                      <input type="hidden" name="notificationId" value={row.id} />
-                      <button className="users-email" type="submit">Retry</button>
-                    </form>
-                  ) : (
-                    <span className="users-sub">No action</span>
-                  )}
-                </TableCell>
-              </tr>
-            ))}
-          />
-        ) : null}
+      <section className="screen-stats" aria-label="Notification totals">
+        <Stat tone="#9a6700" icon="bell" label="Unread" value={result.unread} note="Waiting for you" />
+        <Stat tone="#12304a" icon="audit" label="Inbox" value={result.total} note="Your notices" />
+        <Stat tone="#1d4ed8" icon="reports" label="Deliveries" value={deliveries.total} note="Clinic channels" />
+        <Stat tone={emailReady ? "#0f766e" : "#9b2330"} icon={emailReady ? "check" : "issue"} label="Email" value={emailReady ? "On" : "Off"} note={deliveries.ok ? `${deliveries.failed} failed` : "Log unavailable"} />
       </section>
+      <section className="users-card">
+        <header className="users-card-head">
+          <h2>Inbox</h2>
+          <div className="screen-action-row">
+            {result.unread > 0 ? <MarkAllReadForm /> : null}
+            {result.total > 0 ? <ClearNotificationsForm /> : null}
+          </div>
+        </header>
+        {result.notifications.length === 0 ? (
+          <p className="users-empty">You have no notifications.</p>
+        ) : (
+          <ul className="notice-list">
+            {result.notifications.map((note) => {
+              const unread = !note.readAt;
+              const failed = note.status === "FAILED";
+              return (
+                <li key={note.id} className={unread ? "notice-row is-unread" : "notice-row"}>
+                  <span className="notice-icon" aria-hidden="true">
+                    <AdminIcon name={failed ? "issue" : "bell"} />
+                  </span>
+                  <div className="notice-copy">
+                    <p className="notice-title">{note.title}</p>
+                    {note.preview ? <p className="notice-preview">{note.preview}</p> : null}
+                    <p className="notice-meta">
+                      <span>{channelLabel(note.channel)}</span>
+                      <span>{words(note.type)}</span>
+                      <span>{formatPlatformWhen(new Date(note.createdAt))}</span>
+                    </p>
+                    {note.entityType === "DoctorProfile" && note.entityId ? (
+                      <Link className="notice-link" href={`/admin/doctors/${note.entityId}`}>
+                        Review and verify
+                      </Link>
+                    ) : null}
+                  </div>
+                  <div className="notice-side">
+                    <StatusBadge tone={note.readAt ? "slate" : failed ? "red" : "teal"}>{note.readAt ? "Read" : failed ? "Failed" : "Unread"}</StatusBadge>
+                    {note.readAt ? null : <MarkReadForm notificationId={note.id} />}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+      {result.total > 0 ? <CatalogPager page={result.page} pageSize={result.pageSize} total={result.total} query={catalogQuery("/admin/notifications", {})} label="notification" /> : null}
+      {deliveries.unavailable ? <p className="users-empty">Per-channel attempt history needs the notification migration. It has not been applied.</p> : null}
+      {deliveries.ok && !deliveries.unavailable ? (
+        <section className="users-card">
+          <header className="users-card-head">
+            <h2>Delivery log</h2>
+            <span className="notice-quiet">{deliveries.total} records</span>
+          </header>
+          {deliveries.rows.length === 0 ? (
+            <p className="users-empty">No deliveries match this view.</p>
+          ) : (
+            <ul className="notice-list">
+              {deliveries.rows.map((row) => {
+                const tone = deliveryTone(row.status);
+                return (
+                  <li key={row.id} className={row.status === "FAILED" ? "notice-row is-failed" : "notice-row"}>
+                    <span className={`notice-icon is-${tone}`} aria-hidden="true">
+                      <AdminIcon name={row.status === "FAILED" ? "issue" : row.status === "QUEUED" ? "clock" : "check"} />
+                    </span>
+                    <div className="notice-copy">
+                      <p className="notice-title">{row.recipient}</p>
+                      {row.preview ? <p className="notice-preview">{row.preview}</p> : null}
+                      <p className="notice-meta">
+                        <span>{words(row.type)}</span>
+                        <span>{channelLabel(row.channel)}</span>
+                        <span>{row.attemptCount} {row.attemptCount === 1 ? "attempt" : "attempts"}</span>
+                        <span>{formatPlatformWhen(new Date(row.createdAt))}</span>
+                      </p>
+                    </div>
+                    <div className="notice-side">
+                      <StatusBadge tone={tone}>{words(row.status)}</StatusBadge>
+                      {row.errorCode ? <StatusBadge tone="red">{words(row.errorCode)}</StatusBadge> : null}
+                      {row.retryable ? (
+                        <form action={retryDeliveryAction} className="screen-action-form">
+                          <input type="hidden" name="notificationId" value={row.id} />
+                          <button className="screen-action screen-action-on" type="submit">
+                            Retry
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <DeliveryPager page={deliveries.page} pageSize={deliveries.pageSize} total={deliveries.total} params={params} />
+        </section>
+      ) : null}
+      <p className="notice-footnote">
+        In-app notices stay in this inbox. {emailReady ? "Email is on. A sent status means Gmail accepted the message." : "Email is off."} Text messages are not sent. Previews leave out clinical note text.
+      </p>
     </main>
+  );
+}
+
+function DeliveryPager({
+  page,
+  pageSize,
+  total,
+  params,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  params: Record<string, string | string[] | undefined>;
+}) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (pages <= 1) return null;
+  const href = (next: number) => {
+    const search = new URLSearchParams();
+    for (const key of ["channel", "status", "type", "page"] as const) {
+      const value = params[key];
+      if (typeof value === "string" && value) search.set(key, value);
+    }
+    search.set("deliveryPage", String(next));
+    return `/admin/notifications?${search.toString()}`;
+  };
+  return (
+    <div className="notice-pager">
+      <p>
+        Page {page} of {pages}
+      </p>
+      <div>
+        {page > 1 ? (
+          <Link href={href(page - 1)}>Previous</Link>
+        ) : (
+          <span>Previous</span>
+        )}
+        {page < pages ? <Link href={href(page + 1)}>Next</Link> : <span>Next</span>}
+      </div>
+    </div>
+  );
+}
+
+function Stat({ tone, icon, label, value, note }: { tone: string; icon: AdminIconName; label: string; value: number | string; note: string }) {
+  return (
+    <article className="stat-card screen-stat" style={{ ["--stat" as string]: tone }}>
+      <span className="stat-card-icon">
+        <AdminIcon name={icon} />
+      </span>
+      <span className="stat-card-copy">
+        <span className="stat-card-value">{value}</span>
+        <span className="stat-card-label">{label}</span>
+        <span className="stat-card-note">{note}</span>
+      </span>
+    </article>
   );
 }

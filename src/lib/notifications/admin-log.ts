@@ -17,8 +17,9 @@ export async function listDeliveryLog(
     ...(query.type?.trim() ? { type: query.type.trim().slice(0, 80) } : {}),
   };
   try {
-    const [total, rows] = await Promise.all([
+    const [total, failed, rows] = await Promise.all([
       db.notification.count({ where }),
+      db.notification.count({ where: { status: "FAILED" } }),
       db.notification.findMany({
         where,
         orderBy: { createdAt: "desc" },
@@ -43,6 +44,7 @@ export async function listDeliveryLog(
       page,
       pageSize,
       total,
+      failed,
       rows: rows.map((row) => ({
         id: row.id,
         channel: row.channel,
@@ -58,8 +60,8 @@ export async function listDeliveryLog(
     };
   } catch (error) {
     if (isSchemaMismatch(error)) {
-      return { ok: true as const, unavailable: true, page, pageSize, total: 0, rows: [] };
+      return { ok: true as const, unavailable: true, page, pageSize, total: 0, failed: 0, rows: [] };
     }
-    return { ok: false as const, unavailable: false, page, pageSize, total: 0, rows: [] };
+    return { ok: false as const, unavailable: false, page, pageSize, total: 0, failed: 0, rows: [] };
   }
 }
