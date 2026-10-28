@@ -1,5 +1,4 @@
 import { cache } from "react";
-import { connection } from "next/server";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
@@ -34,7 +33,4 @@ export async function loadSystemName(db: Pick<PrismaClient, "platformSetting">):
 }
 
 /** Current name for pages and titles. Reads the database on each request. */
-export const getSystemName = cache(async () => {
-  await connection();
-  return loadSystemName(prisma);
-});
+export const getSystemName = cache(async () => loadSystemName(prisma));

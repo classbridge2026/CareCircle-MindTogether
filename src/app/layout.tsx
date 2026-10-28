@@ -1,24 +1,22 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { ButtonBusy } from "@/components/button-busy";
 import { metadataBase } from "@/lib/brand/metadata-base";
-import { getSystemName } from "@/lib/brand/system-name";
+import { DEFAULT_SYSTEM_NAME } from "@/lib/brand/system-name";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const systemName = await getSystemName();
+export function generateMetadata(): Metadata {
   return {
     metadataBase: metadataBase(),
     title: {
-      default: systemName,
-      template: `%s · ${systemName}`,
+      default: DEFAULT_SYSTEM_NAME,
+      template: `%s · ${DEFAULT_SYSTEM_NAME}`,
     },
-    description: `${systemName} is a healthcare platform for appointments and online consultations in Sierra Leone.`,
+    description: `${DEFAULT_SYSTEM_NAME} is a healthcare platform for appointments and online consultations in Sierra Leone.`,
     openGraph: {
-      siteName: systemName,
-      images: [{ url: "/carecircle-logo.png", alt: systemName }],
+      siteName: DEFAULT_SYSTEM_NAME,
+      images: [{ url: "/carecircle-logo.png", alt: DEFAULT_SYSTEM_NAME }],
     },
   };
 }
@@ -31,9 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <Suspense fallback={null}>
-          <ButtonBusy />
-        </Suspense>
+        <ButtonBusy />
         {children}
       </body>
     </html>
