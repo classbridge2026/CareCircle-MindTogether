@@ -78,8 +78,10 @@ export async function loadSpecialties(db: PrismaClient, filters: { q?: string; s
       { description: { contains: q, mode: "insensitive" } },
     ];
   }
+  const searchWhere: Prisma.SpecialtyWhereInput = {};
+  if (q) searchWhere.OR = where.OR;
   try {
-    const [total, rows] = await Promise.all([
+    const [total, rows, groups, withDoctors] = await Promise.all([
       db.specialty.count({ where }),
       db.specialty.findMany({
         where,
@@ -100,12 +102,25 @@ export async function loadSpecialties(db: PrismaClient, filters: { q?: string; s
           },
         },
       }),
+      db.specialty.groupBy({
+        by: ["isActive"],
+        where: searchWhere,
+        _count: { _all: true },
+      }),
+      db.specialty.count({ where: { ...searchWhere, doctors: { some: {} } } }),
     ]);
+    const summary = { active: 0, inactive: 0, withDoctors };
+    for (const group of groups) {
+      const count = group._count._all;
+      if (group.isActive) summary.active += count;
+      else summary.inactive += count;
+    }
     return {
       ok: true as const,
       total,
       page,
       pageSize: CATALOG_PAGE_SIZE,
+      summary,
       rows: rows.map((specialty) => ({
         id: specialty.id,
         code: specialty.code,
@@ -116,6 +131,8 @@ export async function loadSpecialties(db: PrismaClient, filters: { q?: string; s
         isActive: specialty.isActive,
         referenced: specialty._count.doctors + specialty._count.offerings + specialty._count.appointments > 0,
         doctorCount: specialty._count.doctors,
+        offeringCount: specialty._count.offerings,
+        appointmentCount: specialty._count.appointments,
         doctors: specialty.doctors.map((link) => ({
           id: link.id,
           doctorId: link.doctor.id,

@@ -1160,6 +1160,11 @@
 .services-col-fee { width: 16%; }
 .services-col-status { width: 12%; }
 .services-col-actions { width: 12%; }
+.specialties-col-name { width: 38%; }
+.specialties-col-doctors { width: 16%; }
+.specialties-col-order { width: 12%; }
+.specialties-col-status { width: 16%; }
+.specialties-col-actions { width: 18%; }
 
 .offerings-col-doctor { width: 24%; }
 .offerings-col-service { width: 22%; }
