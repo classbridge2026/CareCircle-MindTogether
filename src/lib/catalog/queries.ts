@@ -184,7 +184,7 @@ export async function loadServices(db: PrismaClient, filters: { q?: string; stat
   }
   try {
     const currency = await readDefaultCurrency(db);
-    const [total, rows, groups] = await Promise.all([
+    const [total, rows] = await Promise.all([
       db.consultationService.count({ where }),
       db.consultationService.findMany({
         where,
@@ -193,22 +193,8 @@ export async function loadServices(db: PrismaClient, filters: { q?: string; stat
         take: CATALOG_PAGE_SIZE,
         include: { _count: { select: { offerings: true, appointments: true } } },
       }),
-      db.consultationService.groupBy({
-        by: ["isActive", "mode"],
-        where,
-        _count: { _all: true },
-      }),
     ]);
-    const summary = { active: 0, inactive: 0, online: 0, inPerson: 0, either: 0 };
-    for (const group of groups) {
-      const count = group._count._all;
-      if (group.isActive) summary.active += count;
-      else summary.inactive += count;
-      if (group.mode === "ONLINE") summary.online += count;
-      else if (group.mode === "IN_PERSON") summary.inPerson += count;
-      else summary.either += count;
-    }
-    return { ok: true as const, total, page, pageSize: CATALOG_PAGE_SIZE, currency, summary, rows: rows.map(serviceDto) };
+    return { ok: true as const, total, page, pageSize: CATALOG_PAGE_SIZE, currency, rows: rows.map(serviceDto) };
   } catch (error) {
     return unavailable(error);
   }
