@@ -13,6 +13,7 @@ import {
   SCREENING_CONSENT_VERSION,
   SCREENING_SAFETY_SETTING,
   activationBlockers,
+  activateBlocker,
   boundedText,
   categoryOrder,
   doctorMayAccess,
@@ -739,6 +740,43 @@ export async function updateGovernance(
     return { ok: true as const, availability };
   } catch (error) {
     return { ok: false as const, code: failed(error) };
+  }
+}
+
+export async function activateScreening(
+  db: PrismaClient,
+  input: { actorUserId: string; roleCodes: string[]; toolId: string },
+): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
+  if (!governanceChangeAllowed(input.roleCodes)) {
+    return { ok: false, message: "A super administrator has to activate an instrument." };
+  }
+  if (!parseUuid(input.toolId)) return { ok: false, message: "This instrument could not be found." };
+  try {
+    const [tool, contacts] = await Promise.all([
+      db.screeningTool.findUnique({ where: { id: input.toolId }, select: toolSelect }),
+      loadContacts(db),
+    ]);
+    if (!tool) return { ok: false, message: "This instrument could not be found." };
+    const blocker = activateBlocker(gateFor(tool, contacts));
+    if (blocker) return { ok: false, message: blocker };
+    await db.$transaction(async (tx) => {
+      await tx.screeningTool.update({
+        where: { id: tool.id },
+        data: { availability: "ACTIVE", safetyProtocolApproved: true, retiredAt: null },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorUserId: input.actorUserId,
+          action: "screening.activated",
+          entityType: "ScreeningTool",
+          entityId: tool.id,
+          metadata: clinicalAuditMetadata({ availability: "ACTIVE" }),
+        },
+      });
+    });
+    return { ok: true, message: `${tool.name} is active. Patients can start it.` };
+  } catch (error) {
+    return { ok: false, message: failed(error) === "SCHEMA" ? "The screening registry is not available." : "This instrument could not be activated." };
   }
 }
 

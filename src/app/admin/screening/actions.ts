@@ -5,7 +5,7 @@ import type { AdminActionState } from "@/lib/admin/action-state";
 import { ADMIN_ROLE_CODE, SUPER_ADMIN_ROLE_CODE } from "@/lib/auth/constants";
 import { requireStoredRoles } from "@/lib/auth/require-role";
 import { prisma } from "@/lib/db/prisma";
-import { saveQuestionSet, saveSupportContact, updateGovernance } from "@/lib/screening/service";
+import { activateScreening, saveQuestionSet, saveSupportContact, updateGovernance } from "@/lib/screening/service";
 
 export async function updateScreeningGovernanceAction(formData: FormData) {
   const user = await requireStoredRoles([SUPER_ADMIN_ROLE_CODE]);
@@ -19,6 +19,16 @@ export async function updateScreeningGovernanceAction(formData: FormData) {
   });
   revalidatePath(`/admin/screening/${toolId}`);
   revalidatePath("/admin/screening");
+}
+
+export async function activateScreeningAction(_previous: AdminActionState, formData: FormData): Promise<AdminActionState> {
+  const user = await requireStoredRoles([SUPER_ADMIN_ROLE_CODE]);
+  const toolId = String(formData.get("toolId") ?? "");
+  const result = await activateScreening(prisma, { actorUserId: user.id, roleCodes: user.roleCodes, toolId });
+  revalidatePath("/admin/screening");
+  revalidatePath(`/admin/screening/${toolId}`);
+  revalidatePath("/patient/screening");
+  return { message: result.message, tone: result.ok ? "ok" : "error" };
 }
 
 export async function saveScreeningQuestionsAction(payload: {

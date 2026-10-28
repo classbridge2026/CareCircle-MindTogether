@@ -81,6 +81,18 @@ export function nextAvailability(tool: ToolGate): "ACTIVE" | "INACTIVE" | "RETIR
     : "INACTIVE";
 }
 
+export function activateBlocker(tool: ToolGate): string | null {
+  if (tool.availability === "ACTIVE") return "This instrument is already active.";
+  if (tool.retiredAt || tool.approvalState === "RETIRED" || tool.availability === "RETIRED") return "This instrument is retired.";
+  const blockers = activationBlockers({
+    ...tool,
+    availability: "INACTIVE",
+    retiredAt: null,
+    safetyProtocolApproved: true,
+  });
+  return blockers[0] ?? null;
+}
+
 export function governanceChangeAllowed(roleCodes: string[]): boolean {
   return roleCodes.includes(SUPER_ADMIN_ROLE_CODE);
 }

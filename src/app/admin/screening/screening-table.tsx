@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { AdminIcon } from "@/components/admin/admin-icons";
 import { primaryButtonClass, textInputClass } from "@/components/form-classes";
-import { updateScreeningGovernanceAction } from "./actions";
+import type { AdminActionState } from "@/lib/admin/action-state";
+import { activateScreeningAction, updateScreeningGovernanceAction } from "./actions";
 
 export type ScreeningToolRow = {
   id: string;
@@ -71,7 +72,10 @@ export function ScreeningTable({ tools, canGovern }: { tools: ScreeningToolRow[]
                   <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.licenseStatus)}`}>{label(item.licenseStatus)}</span></td>
                   <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.availability)}`}>{label(item.availability)}</span></td>
                   <td className={`${bodyCell} border-t border-brand-line`}>
-                    <button type="button" className="font-semibold text-brand-teal" onClick={() => setOpenId(item.id)}>View</button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button type="button" className="font-semibold text-brand-teal" onClick={() => setOpenId(item.id)}>View</button>
+                      {canGovern && item.availability === "INACTIVE" ? <ActivateButton toolId={item.id} /> : null}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -125,6 +129,22 @@ function ToolDialog({ tool, canGovern, onClose }: { tool: ScreeningToolRow; canG
             <div className="screen-fact wide"><dt>Instructions</dt><dd>{tool.instructions}</dd></div>
             <div className="screen-fact wide"><dt>Source and licensing note</dt><dd>{tool.sourceReference}</dd></div>
           </dl>
+          {canGovern && tool.availability === "INACTIVE" ? (
+            <div className="screen-dialog-form">
+              <h3>Availability</h3>
+              <p>Activating records the safety protocol and opens this instrument for patients when approval, licensing, questions, and a support contact are already stored.</p>
+              {tool.blockers.length > 0 ? (
+                <div className="screen-blockers">
+                  <ul>
+                    {tool.blockers.map((blocker) => (
+                      <li key={blocker}>{blocker}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <ActivateButton toolId={tool.id} />
+            </div>
+          ) : null}
           {canGovern ? (
             <form key={`${tool.id}:${tool.licenseStatus}:${tool.approvalState}`} action={updateScreeningGovernanceAction} className="screen-dialog-form">
               <h3>Clinical and licensing status</h3>
@@ -158,5 +178,22 @@ function ToolDialog({ tool, canGovern, onClose }: { tool: ScreeningToolRow; canG
         </div>
       </div>
     </div>
+  );
+}
+
+function ActivateButton({ toolId }: { toolId: string }) {
+  const [state, action, pending] = useActionState(activateScreeningAction, {} as AdminActionState);
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <input name="toolId" type="hidden" value={toolId} />
+      <button className={primaryButtonClass} type="submit" disabled={pending}>
+        {pending ? "Activating…" : "Activate"}
+      </button>
+      {state.message ? (
+        <p className={state.tone === "error" ? "user-form-error" : "user-form-ok"} role={state.tone === "error" ? "alert" : "status"}>
+          {state.message}
+        </p>
+      ) : null}
+    </form>
   );
 }

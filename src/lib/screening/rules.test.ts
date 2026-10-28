@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activationBlockers,
+  activateBlocker,
   comparableAlgorithms,
   governanceChangeAllowed,
   governancePayloadRejected,
@@ -70,6 +71,13 @@ describe("screening gates", () => {
   it("activates only when every approval is present", () => {
     expect(patientCanStart(open)).toBe(true);
     expect(nextAvailability({ ...open, availability: "INACTIVE" })).toBe("ACTIVE");
+  });
+
+  it("lets activation record the safety protocol when the other approvals are already stored", () => {
+    const ready = { ...open, availability: "INACTIVE", safetyProtocolApproved: false };
+    expect(activateBlocker(ready)).toBeNull();
+    expect(activateBlocker({ ...ready, approvalState: "PENDING_CLINICAL_REVIEW" })).toBe("Clinical approval has not been recorded.");
+    expect(activateBlocker(open)).toBe("This instrument is already active.");
   });
 
   it("refuses threshold edits from every role", () => {
