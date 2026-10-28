@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CatalogPager, PageHeader, catalogQuery } from "@/components/admin/catalog-ui";
+import { CatalogPager, catalogQuery } from "@/components/admin/catalog-ui";
 import { Notice, RecordTable, TableCell } from "@/components/admin/portal-ui";
 import { RecordsUnavailable } from "@/components/records-unavailable";
 import { StatusBadge } from "@/components/status-badge";
@@ -24,11 +24,6 @@ export default async function RolesPage({ searchParams }: { searchParams: Promis
   const superAdmin = actor.roleCodes.includes(SUPER_ADMIN_ROLE_CODE);
   return (
     <main className="grid gap-6">
-      <PageHeader
-        eyebrow="People and access"
-        title="Administrators and roles"
-        description="Administrator and super administrator access is separate from patient and doctor roles. Public registration cannot assign either administrator role."
-      />
       {!superAdmin ? <Notice>You can review administrator accounts. Only a super administrator can grant or remove those roles.</Notice> : null}
       <RecordTable
         title="Administrators"
