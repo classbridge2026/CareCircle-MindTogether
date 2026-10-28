@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { CatalogPager, catalogQuery } from "@/components/admin/catalog-ui";
-import { AdminIcon, type AdminIconName } from "@/components/admin/admin-icons";
 import { LiveQueryForm } from "@/components/live-query";
 import { textInputClass } from "@/components/form-classes";
 import { RecordsUnavailable } from "@/components/records-unavailable";
@@ -37,57 +35,8 @@ export default async function OfferingsPage({
     createdLabel: formatWhen(new Date(offering.createdAt)),
     updatedLabel: formatWhen(new Date(offering.updatedAt)),
   }));
-  const statusOn = status === "ACTIVE" || status === "INACTIVE" ? status : "";
-  const modeOn = mode === "ONLINE" || mode === "IN_PERSON" ? mode : "";
-  const filtered = Boolean(q || doctorId || specialtyId || serviceId || statusOn || modeOn);
-  const shared = { q, doctorId, specialtyId, serviceId };
-
   return (
     <main className="users-page">
-      <header className="dash-lead">
-        <div>
-          <h1>Approved doctor offerings</h1>
-          <p>Assign a consultation service to an approved doctor, set the doctor’s fee, and choose whether the visit is online or in person.</p>
-        </div>
-      </header>
-      <section className="stat-grid" aria-label="Offering totals">
-        <StatCard
-          href={catalogQuery("/admin/offerings", shared)}
-          label="Matching offerings"
-          value={result.total}
-          note={filtered ? "Current filters" : "Full catalog"}
-          icon="offering"
-          color="#12304a"
-          selected={!statusOn && !modeOn}
-        />
-        <StatCard
-          href={catalogQuery("/admin/offerings", { ...shared, status: statusOn === "ACTIVE" ? "" : "ACTIVE", mode: modeOn })}
-          label="Active"
-          value={result.summary.active}
-          note="Open for new bookings"
-          icon="verify"
-          color="#0f766e"
-          selected={statusOn === "ACTIVE"}
-        />
-        <StatCard
-          href={catalogQuery("/admin/offerings", { ...shared, status: statusOn, mode: modeOn === "ONLINE" ? "" : "ONLINE" })}
-          label="Online"
-          value={result.summary.online}
-          note="Video consultations"
-          icon="calendar"
-          color="#1d4ed8"
-          selected={modeOn === "ONLINE"}
-        />
-        <StatCard
-          href={catalogQuery("/admin/offerings", { ...shared, status: statusOn, mode: modeOn === "IN_PERSON" ? "" : "IN_PERSON" })}
-          label="In person"
-          value={result.summary.inPerson}
-          note="Clinic visits"
-          icon="location"
-          color="#9a6700"
-          selected={modeOn === "IN_PERSON"}
-        />
-      </section>
       <LiveQueryForm
         pathname="/admin/offerings"
         className="users-filters offerings-filters"
@@ -106,36 +55,5 @@ export default async function OfferingsPage({
       <OfferingsBoard offerings={offerings} doctors={result.eligibleDoctors} services={result.services} currency={result.currency} />
       <CatalogPager page={result.page} pageSize={result.pageSize} total={result.total} query={query} label="offering" />
     </main>
-  );
-}
-
-function StatCard({
-  href,
-  label,
-  value,
-  note,
-  icon,
-  color,
-  selected,
-}: {
-  href: string;
-  label: string;
-  value: number;
-  note: string;
-  icon: AdminIconName;
-  color: string;
-  selected: boolean;
-}) {
-  return (
-    <Link className={`stat-card${selected ? " is-selected" : ""}`} href={href} style={{ ["--stat" as string]: color }} aria-current={selected ? "true" : undefined}>
-      <span className="stat-card-icon">
-        <AdminIcon name={icon} />
-      </span>
-      <span className="stat-card-copy">
-        <span className="stat-card-value">{value}</span>
-        <span className="stat-card-label">{label}</span>
-        <span className="stat-card-note">{note}</span>
-      </span>
-    </Link>
   );
 }

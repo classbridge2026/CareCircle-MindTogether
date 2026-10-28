@@ -222,7 +222,7 @@ export async function loadOfferingWorkspace(
     ];
   }
   try {
-    const [total, rows, groups, doctors, eligibleDoctors, specialties, services, currency] = await Promise.all([
+    const [total, rows, doctors, eligibleDoctors, specialties, services, currency] = await Promise.all([
       db.doctorOffering.count({ where }),
       db.doctorOffering.findMany({
         where,
@@ -235,11 +235,6 @@ export async function loadOfferingWorkspace(
           consultationService: { select: { id: true, name: true, defaultFee: true, currency: true, mode: true } },
           _count: { select: { appointments: true, availabilityRules: true } },
         },
-      }),
-      db.doctorOffering.groupBy({
-        by: ["isActive", "mode"],
-        where,
-        _count: { _all: true },
       }),
       db.doctorProfile.findMany({
         orderBy: { fullName: "asc" },
@@ -267,21 +262,12 @@ export async function loadOfferingWorkspace(
       }),
       readDefaultCurrency(db),
     ]);
-    const summary = { active: 0, inactive: 0, online: 0, inPerson: 0 };
-    for (const group of groups) {
-      const count = group._count._all;
-      if (group.isActive) summary.active += count;
-      else summary.inactive += count;
-      if (group.mode === "ONLINE") summary.online += count;
-      else summary.inPerson += count;
-    }
     return {
       ok: true as const,
       total,
       page,
       pageSize: CATALOG_PAGE_SIZE,
       currency,
-      summary,
       doctors,
       specialties,
       services: services.map((service) => ({
