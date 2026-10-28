@@ -4,8 +4,6 @@ import { metadataBase } from "@/lib/brand/metadata-base";
 import { DEFAULT_SYSTEM_NAME } from "@/lib/brand/system-name";
 import "./globals.css";
 
-export const dynamic = "force-dynamic";
-
 export function generateMetadata(): Metadata {
   return {
     metadataBase: metadataBase(),

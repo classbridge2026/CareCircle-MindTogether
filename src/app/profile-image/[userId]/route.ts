@@ -27,7 +27,7 @@ export async function GET(_request: Request, context: { params: Promise<{ userId
       headers: {
         "Content-Type": result.mimeType,
         "Content-Length": String(result.body.byteLength),
-        "Cache-Control": "private, no-store",
+        "Cache-Control": result.shared ? "public, max-age=86400, immutable" : "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },
     });

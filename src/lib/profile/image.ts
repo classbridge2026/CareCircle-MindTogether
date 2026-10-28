@@ -118,7 +118,7 @@ export async function openProfileImage(
   userId: string,
   viewer: { id: string; roleCodes: string[] } | null,
   deps: { db: PrismaClient },
-): Promise<{ ok: true; body: Uint8Array; mimeType: string } | { ok: false; status: 404 }> {
+): Promise<{ ok: true; body: Uint8Array; mimeType: string; shared: boolean } | { ok: false; status: 404 }> {
   if (!parseUuid(userId)) return { ok: false, status: 404 };
   try {
     const target = await deps.db.user.findUnique({
@@ -141,7 +141,8 @@ export async function openProfileImage(
     if (target.profileImageType !== "image/jpeg" && target.profileImageType !== "image/png" && target.profileImageType !== "image/webp") {
       return { ok: false, status: 404 };
     }
-    return { ok: true, body: new Uint8Array(target.profileImageBytes), mimeType: target.profileImageType };
+    const shared = target.status === "ACTIVE" && target.doctorProfile?.verificationStatus === "APPROVED";
+    return { ok: true, body: new Uint8Array(target.profileImageBytes), mimeType: target.profileImageType, shared };
   } catch (error) {
     if (isRecordsOffline(error)) return { ok: false, status: 404 };
     throw error;
