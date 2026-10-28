@@ -24,8 +24,8 @@ export function DoctorList({
   query,
   filters,
 }: {
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   rows: DoctorListRow[];
   total: number;
   page: number;
@@ -36,15 +36,17 @@ export function DoctorList({
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return (
     <section>
-      <header>
-        <h1 className="text-3xl font-semibold tracking-tight text-brand-navy">{title}</h1>
-        <p className="mt-2 max-w-2xl text-base leading-7 text-brand-muted">{description}</p>
-      </header>
+      {title || description ? (
+        <header>
+          {title ? <h1 className="text-3xl font-semibold tracking-tight text-brand-navy">{title}</h1> : null}
+          {description ? <p className="mt-2 max-w-2xl text-base leading-7 text-brand-muted">{description}</p> : null}
+        </header>
+      ) : null}
       {filters}
       <div className="mt-6">
         <RecordTable
           title="Doctors"
-          caption={title}
+          caption={title ?? "Doctors"}
           wide
           empty={rows.length === 0 ? "No doctors match these filters." : undefined}
           columns={

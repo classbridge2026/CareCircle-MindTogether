@@ -22,8 +22,6 @@ export default async function PendingDoctorsPage({
   const result = await loadDoctors(prisma, { q, page, pendingOnly: true });
   return result.ok ? (
     <DoctorList
-      title="Pending verification"
-      description="Open a doctor to read the profile they submitted, then approve it or decline it."
       rows={result.rows}
       total={result.total}
       page={result.page}
@@ -32,7 +30,7 @@ export default async function PendingDoctorsPage({
       filters={
         <LiveQueryForm
           pathname="/admin/doctors/pending"
-          className="mt-6 flex flex-col gap-3 sm:flex-row"
+          className="flex flex-col gap-3 sm:flex-row"
           fields={[{ name: "q", label: "Search", kind: "text", value: q, labelClassName: "text-sm font-medium text-brand-ink sm:flex-1", inputClassName: "mt-1 h-12 w-full rounded-xl border border-brand-line px-3" }]}
         />
       }
