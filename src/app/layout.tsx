@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ButtonBusy } from "@/components/button-busy";
 import { metadataBase } from "@/lib/brand/metadata-base";
 import { DEFAULT_SYSTEM_NAME } from "@/lib/brand/system-name";
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ButtonBusy />
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
