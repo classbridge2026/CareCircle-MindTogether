@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { AdminIcon } from "@/components/admin/admin-icons";
 import { primaryButtonClass, textInputClass } from "@/components/form-classes";
 import type { AdminActionState } from "@/lib/admin/action-state";
-import { activateScreeningAction, updateScreeningGovernanceAction } from "./actions";
+import { activateScreeningAction, deactivateScreeningAction, updateScreeningGovernanceAction } from "./actions";
 
 export type ScreeningToolRow = {
   id: string;
@@ -72,9 +72,15 @@ export function ScreeningTable({ tools, canGovern }: { tools: ScreeningToolRow[]
                   <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.licenseStatus)}`}>{label(item.licenseStatus)}</span></td>
                   <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.availability)}`}>{label(item.availability)}</span></td>
                   <td className={`${bodyCell} border-t border-brand-line`}>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button type="button" className="font-semibold text-brand-teal" onClick={() => setOpenId(item.id)}>View</button>
-                      {canGovern && item.availability === "INACTIVE" ? <ActivateButton toolId={item.id} /> : null}
+                    <div className="screen-actions">
+                      <div className="screen-action-row">
+                        <button type="button" className="screen-action screen-action-view" onClick={() => setOpenId(item.id)}>
+                          View
+                        </button>
+                        {canGovern && item.availability !== "RETIRED" ? (
+                          <AvailabilityButton key={`${item.id}:${item.availability}`} toolId={item.id} active={item.availability === "ACTIVE"} />
+                        ) : null}
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -129,11 +135,11 @@ function ToolDialog({ tool, canGovern, onClose }: { tool: ScreeningToolRow; canG
             <div className="screen-fact wide"><dt>Instructions</dt><dd>{tool.instructions}</dd></div>
             <div className="screen-fact wide"><dt>Source and licensing note</dt><dd>{tool.sourceReference}</dd></div>
           </dl>
-          {canGovern && tool.availability === "INACTIVE" ? (
+          {canGovern && tool.availability !== "RETIRED" ? (
             <div className="screen-dialog-form">
               <h3>Availability</h3>
-              <p>Activating records the safety protocol and opens this instrument for patients when approval, licensing, questions, and a support contact are already stored.</p>
-              {tool.blockers.length > 0 ? (
+              <p>{tool.availability === "ACTIVE" ? "Deactivating keeps the approvals and hides this instrument from new patient screens." : "Activating records the safety protocol and opens this instrument when approval, licensing, questions, and a support contact are already stored."}</p>
+              {tool.availability !== "ACTIVE" && tool.blockers.length > 0 ? (
                 <div className="screen-blockers">
                   <ul>
                     {tool.blockers.map((blocker) => (
@@ -142,7 +148,7 @@ function ToolDialog({ tool, canGovern, onClose }: { tool: ScreeningToolRow; canG
                   </ul>
                 </div>
               ) : null}
-              <ActivateButton toolId={tool.id} />
+              <AvailabilityButton key={`${tool.id}:${tool.availability}`} toolId={tool.id} active={tool.availability === "ACTIVE"} />
             </div>
           ) : null}
           {canGovern ? (
@@ -181,19 +187,21 @@ function ToolDialog({ tool, canGovern, onClose }: { tool: ScreeningToolRow; canG
   );
 }
 
-function ActivateButton({ toolId }: { toolId: string }) {
-  const [state, action, pending] = useActionState(activateScreeningAction, {} as AdminActionState);
+function AvailabilityButton({ toolId, active }: { toolId: string; active: boolean }) {
+  const [state, action, pending] = useActionState(active ? deactivateScreeningAction : activateScreeningAction, {} as AdminActionState);
   return (
-    <form action={action} className="flex flex-wrap items-center gap-2">
-      <input name="toolId" type="hidden" value={toolId} />
-      <button className={primaryButtonClass} type="submit" disabled={pending}>
-        {pending ? "Activating…" : "Activate"}
-      </button>
+    <>
+      <form action={action} className="screen-action-form">
+        <input name="toolId" type="hidden" value={toolId} />
+        <button className={active ? "screen-action screen-action-off" : "screen-action screen-action-on"} type="submit" disabled={pending}>
+          {pending ? "Saving…" : active ? "Deactivate" : "Activate"}
+        </button>
+      </form>
       {state.message ? (
-        <p className={state.tone === "error" ? "user-form-error" : "user-form-ok"} role={state.tone === "error" ? "alert" : "status"}>
+        <p className={state.tone === "error" ? "screen-action-note is-error" : "screen-action-note"} role={state.tone === "error" ? "alert" : "status"}>
           {state.message}
         </p>
       ) : null}
-    </form>
+    </>
   );
 }

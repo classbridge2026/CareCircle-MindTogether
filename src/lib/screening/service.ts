@@ -780,6 +780,45 @@ export async function activateScreening(
   }
 }
 
+export async function deactivateScreening(
+  db: PrismaClient,
+  input: { actorUserId: string; roleCodes: string[]; toolId: string },
+): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
+  if (!governanceChangeAllowed(input.roleCodes)) {
+    return { ok: false, message: "A super administrator has to change whether an instrument is active." };
+  }
+  if (!parseUuid(input.toolId)) return { ok: false, message: "This instrument could not be found." };
+  try {
+    const tool = await db.screeningTool.findUnique({
+      where: { id: input.toolId },
+      select: { id: true, name: true, availability: true, approvalState: true, retiredAt: true },
+    });
+    if (!tool) return { ok: false, message: "This instrument could not be found." };
+    if (tool.retiredAt || tool.approvalState === "RETIRED" || tool.availability === "RETIRED") {
+      return { ok: false, message: "This instrument is retired." };
+    }
+    if (tool.availability !== "ACTIVE") return { ok: false, message: "This instrument is not active." };
+    await db.$transaction(async (tx) => {
+      await tx.screeningTool.update({
+        where: { id: tool.id },
+        data: { availability: "INACTIVE" },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorUserId: input.actorUserId,
+          action: "screening.deactivated",
+          entityType: "ScreeningTool",
+          entityId: tool.id,
+          metadata: clinicalAuditMetadata({ availability: "INACTIVE" }),
+        },
+      });
+    });
+    return { ok: true, message: `${tool.name} is inactive. Patients cannot start it.` };
+  } catch (error) {
+    return { ok: false, message: failed(error) === "SCHEMA" ? "The screening registry is not available." : "This instrument could not be deactivated." };
+  }
+}
+
 export async function saveQuestionSet(
   db: PrismaClient,
   input: { actorUserId: string; roleCodes: string[]; toolId: string; clear: boolean; questions: unknown; bands: unknown },

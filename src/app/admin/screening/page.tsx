@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { RecordsUnavailable } from "@/components/records-unavailable";
+import { AdminIcon, type AdminIconName } from "@/components/admin/admin-icons";
 import { ADMIN_ROLE_CODE, SUPER_ADMIN_ROLE_CODE } from "@/lib/auth/constants";
 import { requireStoredRoles } from "@/lib/auth/require-role";
 import { formatPlatformWhen } from "@/lib/admin/labels";
@@ -72,19 +73,12 @@ export default async function AdminScreeningPage() {
       </header>
       <SupportContactForm region={contact?.region ?? ""} serviceName={supportLine?.label ?? ""} phone={supportLine?.value ?? ""} />
       {registry.ok ? (
-        <div className="grid gap-3 sm:grid-cols-4">
-          {[
-            ["Instruments", registry.stats.instruments],
-            ["Available to patients", registry.stats.active],
-            ["Assessments completed", registry.stats.submitted],
-            ["Pending clinical review", registry.stats.pendingReview],
-          ].map(([name, value]) => (
-            <article key={name} className="rounded-2xl border border-brand-line bg-white p-4">
-              <p className="text-sm text-brand-muted">{name}</p>
-              <p className="mt-1 text-2xl font-semibold text-brand-navy">{value}</p>
-            </article>
-          ))}
-        </div>
+        <section className="screen-stats" aria-label="Screening totals">
+          <Stat tone="#12304a" icon="screening" label="Instruments" value={registry.stats.instruments} note="Full registry" />
+          <Stat tone="#0f766e" icon="check" label="Available to patients" value={registry.stats.active} note="Open to start" />
+          <Stat tone="#1d4ed8" icon="audit" label="Assessments completed" value={registry.stats.submitted} note="Submitted screens" />
+          <Stat tone="#9a6700" icon="clock" label="Pending clinical review" value={registry.stats.pendingReview} note="Waiting for a clinician" />
+        </section>
       ) : (
         <p className="rounded-2xl border border-brand-line bg-white p-4 text-sm" role="status">The screening registry migration has not been applied, so instruments cannot be activated.</p>
       )}
@@ -119,5 +113,20 @@ export default async function AdminScreeningPage() {
         </div>
       )}
     </section>
+  );
+}
+
+function Stat({ tone, icon, label, value, note }: { tone: string; icon: AdminIconName; label: string; value: number; note: string }) {
+  return (
+    <article className="stat-card screen-stat" style={{ ["--stat" as string]: tone }}>
+      <span className="stat-card-icon">
+        <AdminIcon name={icon} />
+      </span>
+      <span className="stat-card-copy">
+        <span className="stat-card-value">{value}</span>
+        <span className="stat-card-label">{label}</span>
+        <span className="stat-card-note">{note}</span>
+      </span>
+    </article>
   );
 }
