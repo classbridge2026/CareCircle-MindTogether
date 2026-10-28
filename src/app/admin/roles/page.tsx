@@ -28,6 +28,7 @@ export default async function RolesPage({ searchParams }: { searchParams: Promis
       <RecordTable
         title="Administrators"
         caption="Administrators"
+        action={superAdmin ? <GrantRoleForm /> : undefined}
         empty={result.users.length === 0 ? "No administrator accounts are stored." : undefined}
         columns={
           <colgroup>
@@ -58,7 +59,6 @@ export default async function RolesPage({ searchParams }: { searchParams: Promis
         ))}
       />
       <CatalogPager page={result.page} pageSize={result.pageSize} total={result.total} query={catalogQuery("/admin/roles", {})} label="administrator" />
-      {superAdmin ? <GrantRoleForm /> : null}
     </main>
   );
 }
