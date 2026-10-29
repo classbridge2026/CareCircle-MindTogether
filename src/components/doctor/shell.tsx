@@ -31,6 +31,7 @@ import { CareCircleMark } from "@/components/brand";
 import { LiveSearchInput } from "@/components/live-query";
 import { NotificationBell, type BellItem } from "@/components/notifications/bell";
 import { ProfilePhoto } from "@/components/profile-photo";
+import { DoctorGuide } from "@/components/guide/doctor-guide";
 import "../patient/patient-shell.css";
 
 config.autoAddCss = false;
@@ -222,6 +223,7 @@ export function DoctorShell({
         <div className={`min-h-0 w-full min-w-0 flex-1 ${room ? "flex flex-col overflow-hidden" : "overflow-y-auto"}`}>
           <main className={room ? "flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden" : "w-full min-w-0 px-4 py-6 lg:px-8 lg:py-7"}>{children}</main>
         </div>
+        <DoctorGuide />
       </div>
     </div>
   );

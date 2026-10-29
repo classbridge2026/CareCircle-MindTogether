@@ -3237,10 +3237,335 @@ button.users-email {
   }
 }
 
+.guide {
+  position: fixed;
+  right: 1.1rem;
+  bottom: 1.1rem;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.7rem;
+  max-width: calc(100vw - 1.4rem);
+}
+
+.guide-launch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 3rem;
+  padding: 0 1rem 0 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: #12304a;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  box-shadow: 0 0.7rem 1.6rem rgba(18, 48, 74, 0.28);
+  cursor: pointer;
+}
+
+.guide-launch:hover {
+  background: #0f766e;
+}
+
+.guide-launch svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.guide-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(24.5rem, calc(100vw - 1.4rem));
+  max-height: min(38rem, calc(100dvh - 6.2rem));
+  overflow: hidden;
+  border: 1px solid #d7deea;
+  border-radius: 1.05rem;
+  background: #fff;
+  box-shadow: 0 1.2rem 2.8rem rgba(16, 35, 60, 0.22);
+}
+
+.guide-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.85rem 0.9rem;
+  background: linear-gradient(135deg, #12304a, #0f766e);
+  color: #fff;
+}
+
+.guide-head strong,
+.guide-head em {
+  display: block;
+}
+
+.guide-head strong {
+  font-size: 0.95rem;
+}
+
+.guide-head em {
+  margin-top: 0.1rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.guide-mark {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.guide-mark svg,
+.guide-close svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.guide-close {
+  margin-left: auto;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+}
+
+.guide-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 0;
+  padding: 0.9rem;
+  overflow: auto;
+  background: #f6f8fc;
+}
+
+.guide-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+  max-width: 100%;
+}
+
+.guide-row.is-user {
+  justify-content: flex-end;
+}
+
+.guide-avatar {
+  display: grid;
+  flex: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #12304a;
+  color: #fff;
+}
+
+.guide-avatar svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.guide-bubble {
+  max-width: 85%;
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.2rem 0.95rem 0.95rem 0.95rem;
+  background: #fff;
+  color: #1b3148;
+  box-shadow: 0 1px 0 rgba(18, 48, 74, 0.04);
+}
+
+.guide-bubble.is-user {
+  border-radius: 0.95rem 0.95rem 0.2rem 0.95rem;
+  background: #12304a;
+  color: #fff;
+}
+
+.guide-bubble p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.guide-bubble p + p {
+  margin-top: 0.55rem;
+}
+
+.guide-bubble a {
+  display: inline-flex;
+  margin-top: 0.55rem;
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.guide-typing {
+  display: inline-flex;
+  gap: 0.28rem;
+  align-items: center;
+  min-width: 3.2rem;
+  min-height: 1.7rem;
+}
+
+.guide-typing span {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: #8aa0b5;
+  animation: guide-dot 1s infinite ease-in-out;
+}
+
+.guide-typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.guide-typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes guide-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.guide-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.guide-links a,
+.guide-prompts button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.7rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.guide-links a {
+  background: #e7f4f2;
+  color: #0f766e;
+}
+
+.guide-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0 0.9rem 0.7rem;
+  background: #f6f8fc;
+}
+
+.guide-prompts button {
+  border: 1px solid #d5e4e1;
+  background: #fff;
+  color: #0f766e;
+  text-align: left;
+  cursor: pointer;
+}
+
+.guide-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: end;
+  padding: 0.75rem;
+  border-top: 1px solid #e6ebf3;
+  background: #fff;
+}
+
+.guide-form textarea {
+  width: 100%;
+  resize: none;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #d5deea;
+  border-radius: 0.75rem;
+  color: #12304a;
+  font: inherit;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.guide-form textarea:focus {
+  outline: 2px solid #0f766e;
+  border-color: #0f766e;
+}
+
+.guide-form button {
+  height: 2.4rem;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: #0f766e;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.guide-form button:disabled {
+  background: #b7c3d1;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .guide {
+    right: 0.7rem;
+    bottom: 0.7rem;
+  }
+
+  .guide-launch span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .guide-launch {
+    width: 3.2rem;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .guide-panel {
+    max-height: min(32rem, calc(100dvh - 5.4rem));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-sidebar,
-  .stat-card {
+  .stat-card,
+  .guide-typing span {
     transition: none;
+    animation: none;
   }
 
   .stat-card:hover {

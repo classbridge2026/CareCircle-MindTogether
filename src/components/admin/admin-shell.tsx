@@ -8,6 +8,7 @@ import { LiveSearchInput } from "@/components/live-query";
 import { NotificationBell, type BellItem } from "@/components/notifications/bell";
 import { ProfilePhoto } from "@/components/profile-photo";
 import { signOutAction } from "@/app/admin/account-actions";
+import { AdminGuide } from "./admin-guide";
 import { AdminIcon, type AdminIconName } from "./admin-icons";
 
 type Item = { href: string; label: string; icon: AdminIconName; exact?: boolean };
@@ -333,6 +334,7 @@ export function AdminShell({
         </aside>
         <div className="admin-content">{children}</div>
       </div>
+      <AdminGuide superAdmin={roleLabel === "Super administrator"} />
     </div>
   );
 }

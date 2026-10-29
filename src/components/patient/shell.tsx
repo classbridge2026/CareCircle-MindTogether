@@ -30,6 +30,7 @@ import { CareCircleMark } from "@/components/brand";
 import { LiveSearchInput } from "@/components/live-query";
 import { NotificationBell, type BellItem } from "@/components/notifications/bell";
 import { PatientCallAlert } from "@/components/consultation/patient-call-alert";
+import { PatientGuide } from "@/components/guide/patient-guide";
 import { ProfilePhoto } from "@/components/profile-photo";
 import "./patient-shell.css";
 
@@ -221,6 +222,7 @@ export function PatientShell({
           <main className="px-4 py-6 lg:px-8 lg:py-7">{children}</main>
         </div>
         <PatientCallAlert />
+        <PatientGuide />
       </div>
     </div>
   );

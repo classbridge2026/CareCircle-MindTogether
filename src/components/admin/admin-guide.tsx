@@ -1,0 +1,204 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useId, useRef, useState } from "react";
+import { loadGuideFactsAction } from "@/app/admin/guide-actions";
+import { chatWithPortal, guidePlace, openingLine, type PortalFacts } from "@/lib/admin/portal-guide";
+import { AdminIcon } from "./admin-icons";
+
+type Message = { id: number; role: "user" | "assistant"; text: string; href?: string; label?: string };
+
+const STARTERS = ["How can I add a doctor?", "What is in the sidebar?", "How does the portal fit together?"];
+
+export function AdminGuide({ superAdmin }: { superAdmin: boolean }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const place = guidePlace(pathname);
+  const titleId = useId();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const threadRef = useRef<HTMLDivElement>(null);
+  const replyTimer = useRef<number | null>(null);
+  const factsRef = useRef<PortalFacts | null>(null);
+  const factsAt = useRef(0);
+  const factsRequest = useRef<Promise<PortalFacts | null> | null>(null);
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [previousTopicId, setPreviousTopicId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([
+    { id: 1, role: "assistant", text: "Hello. I can walk you through how this administration portal operates. Ask me anything, for example how to add a doctor." },
+  ]);
+
+  useEffect(() => {
+    setMessages((current) => {
+      if (current.length !== 1 || current[0]?.role !== "assistant") return current;
+      const next = openingLine(guidePlace(pathname));
+      return current[0].text === next ? current : [{ ...current[0], text: next }];
+    });
+  }, [pathname]);
+
+  function loadFacts() {
+    if (factsRequest.current) return factsRequest.current;
+    const request = loadGuideFactsAction()
+      .then((facts) => {
+        if (facts) {
+          factsRef.current = facts;
+          factsAt.current = Date.now();
+        }
+        return facts ?? factsRef.current;
+      })
+      .catch(() => factsRef.current)
+      .finally(() => {
+        if (factsRequest.current === request) factsRequest.current = null;
+      });
+    factsRequest.current = request;
+    return request;
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    inputRef.current?.focus();
+    void loadFacts();
+  }, [open]);
+
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (thread) thread.scrollTop = thread.scrollHeight;
+  }, [messages, typing, open]);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (replyTimer.current) window.clearTimeout(replyTimer.current);
+    };
+  }, []);
+
+  function ask(value: string) {
+    const question = value.trim();
+    if (!question || typing) return;
+    const topicId = previousTopicId;
+    setDraft("");
+    setTyping(true);
+    setMessages((current) => [...current, { id: current.length + 1, role: "user", text: question }]);
+    replyTimer.current = window.setTimeout(() => {
+      void (async () => {
+        const live = /\b(how many|how may|total|count|pending|attention|today|hello|hi|should i)\b/i.test(question);
+        const fresh = factsRef.current !== null && Date.now() - factsAt.current < 60_000;
+        if (live && !fresh) await loadFacts();
+        else if (!factsRef.current) void loadFacts();
+        const reply = chatWithPortal({ question, pathname, superAdmin, previousTopicId: topicId, facts: factsRef.current });
+        setPreviousTopicId(reply.topicId);
+        if (reply.navigate && reply.link) router.push(reply.link.href);
+        setTyping(false);
+        setMessages((current) => [
+          ...current,
+          { id: current.length + 1, role: "assistant", text: reply.text, href: reply.link?.href, label: reply.link?.label },
+        ]);
+      })();
+    }, 280);
+  }
+
+  const showStarters = messages.length === 1 && !typing;
+
+  return (
+    <div className="guide" data-no-busy="">
+      {open ? (
+        <section className="guide-panel" role="dialog" aria-modal="false" aria-labelledby={titleId}>
+          <header className="guide-head">
+            <span className="guide-mark" aria-hidden="true">
+              <AdminIcon name="guide" />
+            </span>
+            <span>
+              <strong id={titleId}>Assistant</strong>
+              <em>Machine learning · You are on {place}</em>
+            </span>
+            <button type="button" className="guide-close" onClick={() => setOpen(false)}>
+              <AdminIcon name="close" />
+              <span className="sr-only">Close chat</span>
+            </button>
+          </header>
+          <div className="guide-thread" ref={threadRef}>
+            {messages.map((message) => (
+              <div key={message.id} className={message.role === "user" ? "guide-row is-user" : "guide-row"}>
+                {message.role === "assistant" ? (
+                  <span className="guide-avatar" aria-hidden="true">
+                    <AdminIcon name="guide" />
+                  </span>
+                ) : null}
+                <div className={message.role === "user" ? "guide-bubble is-user" : "guide-bubble"}>
+                  {message.text
+                    .split(/\n+/)
+                    .filter((line) => line.trim())
+                    .map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                  {message.href && message.label ? (
+                    <Link href={message.href}>{message.label}</Link>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+            {typing ? (
+              <div className="guide-row">
+                <span className="guide-avatar" aria-hidden="true">
+                  <AdminIcon name="guide" />
+                </span>
+                <p className="guide-bubble guide-typing" aria-label="Assistant is typing">
+                  <span />
+                  <span />
+                  <span />
+                </p>
+              </div>
+            ) : null}
+          </div>
+          {showStarters ? (
+            <div className="guide-prompts">
+              {STARTERS.map((prompt) => (
+                <button key={prompt} type="button" onClick={() => ask(prompt)}>
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <form
+            className="guide-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              ask(draft);
+            }}
+          >
+            <label className="sr-only" htmlFor="portal-guide-question">
+              Message
+            </label>
+            <textarea
+              ref={inputRef}
+              id="portal-guide-question"
+              rows={2}
+              value={draft}
+              placeholder="Message"
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  ask(draft);
+                }
+              }}
+            />
+            <button type="submit" disabled={!draft.trim() || typing}>
+              Send
+            </button>
+          </form>
+        </section>
+      ) : null}
+      <button type="button" className="guide-launch" aria-expanded={open} suppressHydrationWarning onClick={() => setOpen((value) => !value)}>
+        <AdminIcon name={open ? "close" : "guide"} />
+        <span>{open ? "Close" : "Chat"}</span>
+      </button>
+    </div>
+  );
+}
