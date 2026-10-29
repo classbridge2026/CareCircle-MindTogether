@@ -59,7 +59,9 @@ export function canTransition(input: {
       return { ok: true };
     }
     if (input.to === "IN_PROGRESS" && input.from === "CHECKED_IN") return { ok: true };
-    if (input.to === "COMPLETED" && input.from === "IN_PROGRESS") return { ok: true };
+    if (input.to === "COMPLETED" && (input.from === "CONFIRMED" || input.from === "CHECKED_IN" || input.from === "IN_PROGRESS")) {
+      return { ok: true };
+    }
     if (input.to === "NO_SHOW" && input.from === "CONFIRMED") {
       if (input.now < input.startsAt) return { ok: false, code: "TOO_EARLY" };
       return { ok: true };

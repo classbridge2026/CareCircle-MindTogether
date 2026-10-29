@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { formatPlatformDay, formatPlatformWhen } from "@/lib/admin/labels";
+import { completeEndedConsultations, shownAppointmentStatus } from "@/lib/appointments/finish";
 import { formatBookingWhen } from "@/lib/appointments/time";
 import { parseUuid } from "@/lib/catalog/rules";
 import { isSchemaMismatch } from "@/lib/doctors/errors";
@@ -45,11 +46,13 @@ export async function loadDoctorDashboard(db: PrismaClient, doctor: { id: string
     const dayEnd = addDays(dayStart, 1);
     const weekStart = startOfWeek(dayStart);
     const weekEnd = addDays(weekStart, 7);
+    await completeEndedConsultations(db, { now, doctorProfileId: doctor.id });
     const visitSelect = {
       id: true,
       status: true,
       mode: true,
       startsAt: true,
+      endsAt: true,
       patientProfileId: true,
       patient: { select: { id: true, fullName: true, user: { select: { id: true, profileImageUpdatedAt: true } } } },
       consultationService: { select: { name: true, code: true } },
@@ -64,12 +67,12 @@ export async function loadDoctorDashboard(db: PrismaClient, doctor: { id: string
       db.appointment.count({ where: { doctorProfileId: doctor.id, startsAt: { gte: dayEnd }, status: { in: [...OPEN] } } }),
       db.appointment.count({ where: { ...followUpWhere(doctor.id), startsAt: { gte: now }, status: { in: [...OPEN] } } }),
       db.appointment.count({ where: { ...followUpWhere(doctor.id), startsAt: { gte: now, lt: weekEnd }, status: { in: [...OPEN] } } }),
-      db.appointment.count({ where: { doctorProfileId: doctor.id, status: "IN_PROGRESS" } }),
+      db.appointment.count({ where: { doctorProfileId: doctor.id, status: "IN_PROGRESS", endsAt: { gt: now } } }),
       db.clinicalNote.count({
         where: { authorDoctorProfileId: doctor.id, archivedAt: null, kind: "PATIENT_SUMMARY", summaryReleaseStatus: "NOT_RELEASED" },
       }),
       db.appointment.findMany({
-        where: { doctorProfileId: doctor.id, status: "IN_PROGRESS" },
+        where: { doctorProfileId: doctor.id, status: "IN_PROGRESS", endsAt: { gt: now } },
         select: { id: true, encounter: { select: { notes: { where: { kind: "PRIVATE_WORKING", archivedAt: null }, select: { id: true }, take: 1 } } } },
         take: 50,
       }),
@@ -81,8 +84,11 @@ export async function loadDoctorDashboard(db: PrismaClient, doctor: { id: string
     ]);
     const missingNotes = openVisits.filter((visit) => !visit.encounter || visit.encounter.notes.length === 0).length;
     const newThisWeek = patientGroups.filter((group) => group._min.createdAt && group._min.createdAt >= weekStart && group._min.createdAt < weekEnd).length;
-    const pendingToday = today.filter((row) => row.status !== "COMPLETED" && !row.status.startsWith("CANCELLED") && row.status !== "NO_SHOW" && row.status !== "EXPIRED_UNPAID" && row.status !== "RESCHEDULED").length;
-    const completedToday = today.filter((row) => row.status === "COMPLETED").length;
+    const pendingToday = today.filter((row) => {
+      const status = shownAppointmentStatus(row.status, row.endsAt, now);
+      return status !== "COMPLETED" && !status.startsWith("CANCELLED") && status !== "NO_SHOW" && status !== "EXPIRED_UNPAID" && status !== "RESCHEDULED";
+    }).length;
+    const completedToday = today.filter((row) => shownAppointmentStatus(row.status, row.endsAt, now) === "COMPLETED").length;
     return {
       ok: true as const,
       empty: false as const,
@@ -103,7 +109,7 @@ export async function loadDoctorDashboard(db: PrismaClient, doctor: { id: string
       today: today.map((row) => ({
         id: row.id,
         time: new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Africa/Freetown" }).format(row.startsAt),
-        status: row.status,
+        status: shownAppointmentStatus(row.status, row.endsAt, now),
         mode: row.mode,
         patientId: row.patient.id,
         patientUserId: row.patient.user.id,
@@ -123,6 +129,7 @@ const scheduleSelect = {
   status: true,
   mode: true,
   startsAt: true,
+  endsAt: true,
   consultationServiceId: true,
   patient: { select: { id: true, fullName: true, user: { select: { id: true, profileImageUpdatedAt: true } } } },
   consultationService: { select: { id: true, name: true, code: true } },
@@ -145,6 +152,7 @@ export async function loadDoctorScheduleView(
   try {
     const doctor = await db.doctorProfile.findUnique({ where: { userId: input.userId }, select: { id: true } });
     if (!doctor) return { ok: true as const, rows: [], services: [] as Array<{ id: string; name: string }> };
+    await completeEndedConsultations(db, { now, doctorProfileId: doctor.id });
     const where: Prisma.AppointmentWhereInput = {
       doctorProfileId: doctor.id,
       startsAt: { gte: input.start, lt: input.end },
@@ -165,7 +173,7 @@ export async function loadDoctorScheduleView(
     const dayEnd = addDays(dayStart, 1);
     const presented = rows.map((row) => ({
       id: row.id,
-      status: row.status,
+      status: shownAppointmentStatus(row.status, row.endsAt, now),
       mode: row.mode,
       day: dayKey(row.startsAt),
       time: formatPortalTime(row.startsAt),

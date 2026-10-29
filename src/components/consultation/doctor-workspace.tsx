@@ -346,20 +346,20 @@ function SummaryTab({ appointmentId, note, locked }: { appointmentId: string; no
 
 function CompleteVisit({ appointmentId }: { appointmentId: string }) {
   const [state, action, pending] = useActionState(doctorStatusAction, statusInitial);
-  const saved = state.message === "The appointment status was saved.";
+  const saved = state.message === "The consultation has ended and is marked complete.";
   useRefreshOnSave(saved ? state.message : undefined, saved ? "ok" : undefined);
   return (
     <form action={action}>
-      <h3>Complete consultation</h3>
-      <p className="dr-quiet">Leaving the video room does not complete the encounter. This action closes the visit on the server.</p>
+      <h3>End consultation</h3>
+      <p className="dr-quiet">End the consultation when the visit is finished. The system marks it complete. Ending the call alone leaves the visit open so you can call the patient again.</p>
       <input name="appointmentId" type="hidden" value={appointmentId} />
       <input name="to" type="hidden" value="COMPLETED" />
       <label className="dr-check">
         <input name="confirm" type="checkbox" value="yes" required />
-        I have finished this clinical encounter.
+        I have finished this consultation.
       </label>
       <div className="dr-actions">
-        <button className="dr-leave" disabled={pending} type="submit">{pending ? "Completing…" : "Complete consultation"}</button>
+        <button className="dr-leave" disabled={pending} type="submit">{pending ? "Ending…" : "End consultation"}</button>
       </div>
       <Feedback message={state.message} tone={saved ? "ok" : state.message ? "error" : undefined} />
     </form>

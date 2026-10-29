@@ -455,6 +455,17 @@ export function ConsultationSession({
     setConnection(null);
     try {
       if (role === "doctor" && !failed) {
+        const completed = await fetch(`/api/appointments/${appointmentId}/consultation/complete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: "{}",
+          keepalive: true,
+        });
+        if (!completed.ok) {
+          leaving.current = false;
+          setHoldMessage("The consultation could not be marked complete. End the consultation again.");
+          return;
+        }
         await fetch(`/api/appointments/${appointmentId}/consultation/calling`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -469,7 +480,7 @@ export function ConsultationSession({
         keepalive: true,
       });
     } catch {
-      // Leaving still returns the person to the appointment. The appointment status is unchanged.
+      // A failed request still returns the person to the appointment.
     }
     if (failed) {
       leaving.current = false;

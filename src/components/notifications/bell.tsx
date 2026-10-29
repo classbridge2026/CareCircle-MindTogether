@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { faBell, faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { noticeStamp } from "@/lib/notifications/stamp";
 import { markAllNotificationsReadAction, markViewedNotificationsAction } from "./actions";
 import "./bell.css";
 
@@ -18,16 +19,52 @@ export type BellItem = {
   when?: string;
 };
 
+type NoticeAudience = "patient" | "doctor" | "admin";
+
+type NoticeSnapshot = { unread: number; items: BellItem[]; stamp: string };
+
+function safeNoticeHref(value: unknown) {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return null;
+  return value;
+}
+
+function readPulse(value: unknown): NoticeSnapshot | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as { unread?: unknown; stamp?: unknown; items?: unknown };
+  if (typeof row.unread !== "number" || !Number.isInteger(row.unread) || row.unread < 0) return null;
+  if (typeof row.stamp !== "string" || !Array.isArray(row.items)) return null;
+  const items: BellItem[] = [];
+  for (const item of row.items.slice(0, 8)) {
+    if (!item || typeof item !== "object") return null;
+    const note = item as { id?: unknown; title?: unknown; href?: unknown; preview?: unknown; when?: unknown };
+    if (typeof note.id !== "string" || typeof note.title !== "string") return null;
+    items.push({
+      id: note.id,
+      title: note.title,
+      href: safeNoticeHref(note.href),
+      read: false,
+      preview: typeof note.preview === "string" ? note.preview : null,
+      when: typeof note.when === "string" ? note.when : undefined,
+    });
+  }
+  const stamp = noticeStamp(row.unread, items.map((item) => item.id));
+  if (row.stamp !== stamp) return null;
+  return { unread: row.unread, items, stamp };
+}
+
 export function NotificationBell({
   unread,
   href,
   items,
+  watch,
 }: {
   unread: number;
   href: string;
   items: BellItem[];
+  watch?: NoticeAudience;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const titleId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -37,17 +74,78 @@ export function NotificationBell({
   const [sheet, setSheet] = useState(false);
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
   const [cleared, setCleared] = useState(false);
+  const [live, setLive] = useState<NoticeSnapshot | null>(null);
   const unreadRef = useRef(unread);
+  const serverStamp = noticeStamp(unread, items.map((item) => item.id));
+  const serverStampRef = useRef(serverStamp);
+  serverStampRef.current = serverStamp;
+  const shown = live && live.stamp !== serverStamp ? live : null;
+  const shownUnread = shown?.unread ?? unread;
+  const shownItems = shown?.items ?? items;
 
   useEffect(() => {
-    if (unreadRef.current === unread) return;
-    unreadRef.current = unread;
+    if (unreadRef.current === shownUnread) return;
+    const increased = shownUnread > unreadRef.current;
+    unreadRef.current = shownUnread;
+    if (!increased) return;
     setCleared(false);
     setHidden(new Set());
-  }, [unread]);
-  const visible = cleared ? [] : items.filter((item) => !item.read && !hidden.has(item.id));
-  const pending = items.filter((item) => !item.read && hidden.has(item.id)).length;
-  const badge = cleared ? 0 : Math.max(0, unread - pending);
+  }, [shownUnread]);
+
+  useEffect(() => {
+    if (!watch) return;
+    let stop = false;
+    let timer = 0;
+    let asked: { stamp: string; tries: number } | null = null;
+    const quiet = () => /\/consultation\/?$/.test(pathname);
+
+    async function look() {
+      if (stop || document.visibilityState === "hidden") return;
+      try {
+        const response = await fetch(`/api/notices/pulse?audience=${watch}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const pulse = readPulse(await response.json());
+        if (stop || !pulse) return;
+        if (pulse.stamp === serverStampRef.current) {
+          setLive(null);
+          asked = null;
+          return;
+        }
+        setLive(pulse);
+        if (quiet()) return;
+        const tries = asked?.stamp === pulse.stamp ? asked.tries : 0;
+        if (tries >= 2) return;
+        asked = { stamp: pulse.stamp, tries: tries + 1 };
+        router.refresh();
+      } catch {
+        // The next check tries again.
+      }
+    }
+
+    function schedule(delay: number) {
+      timer = window.setTimeout(() => {
+        void look().finally(() => {
+          if (!stop) schedule(5000);
+        });
+      }, delay);
+    }
+
+    function onVisible() {
+      if (document.visibilityState === "visible") void look();
+    }
+
+    schedule(3000);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [watch, pathname, router]);
+
+  const visible = cleared ? [] : shownItems.filter((item) => !item.read && !hidden.has(item.id));
+  const pending = shownItems.filter((item) => !item.read && hidden.has(item.id)).length;
+  const badge = cleared ? 0 : Math.max(0, shownUnread - pending);
 
   useEffect(() => setMounted(true), []);
 

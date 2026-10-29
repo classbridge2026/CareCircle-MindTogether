@@ -332,13 +332,13 @@ export function DoctorStage({
       {confirmLeave ? (
         <div className="dr-dialog" role="presentation">
           <div role="dialog" aria-modal="true" aria-labelledby="doctor-leave-title">
-            <h2 id="doctor-leave-title">Leave the consultation?</h2>
-            <p>You can rejoin while the appointment is still open. Leaving does not complete the clinical encounter.</p>
+            <h2 id="doctor-leave-title">End the consultation?</h2>
+            <p>The system marks this visit complete. You will not be able to rejoin this consultation.</p>
             <div className="dr-actions">
               <button className="dr-secondary" type="button" onClick={() => setConfirmLeave(false)}>Stay</button>
               <button className="dr-leave" type="button" disabled={controlBusy !== null} onClick={() => { setControlBusy("leave"); void room.disconnect().finally(onLeave); }}>
                 <PhoneOff aria-hidden="true" size={16} />
-                Leave consultation
+                End consultation
               </button>
             </div>
           </div>

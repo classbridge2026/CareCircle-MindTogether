@@ -29,7 +29,7 @@ export function clinicianMayDocument(input: {
 }
 
 export function visitAllowsClinicalRecord(status: string): boolean {
-  return status === "IN_PROGRESS" || status === "COMPLETED";
+  return status === "CONFIRMED" || status === "CHECKED_IN" || status === "IN_PROGRESS" || status === "COMPLETED";
 }
 
 export function requiresGuardianAuthorization(input: {
@@ -113,7 +113,7 @@ export function clinicalWriteBlock(input: {
   if (!input.doctorApproved) return "Your clinician account cannot change clinical records.";
   if (input.patientArchived) return "This patient profile is archived, so new clinical records cannot be added.";
   if (!visitAllowsClinicalRecord(input.appointmentStatus)) {
-    return "Clinical records can be added when the visit is in progress or completed.";
+    return "Clinical records can be added after the booking is approved, while you prepare, and after the consultation is completed.";
   }
   if (!input.care.ok) return careBlockMessage(input.care.reason);
   if (input.encounterStatus === "CANCELLED") return "This consultation was cancelled, so the clinical record cannot be changed.";

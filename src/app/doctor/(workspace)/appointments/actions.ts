@@ -39,6 +39,7 @@ export async function doctorStatusAction(_previous: DoctorActionState, formData:
   revalidatePath(`/patient/appointments/${result.appointmentId}`);
   revalidatePath(`/patient/appointments/${result.appointmentId}/consultation`);
   revalidatePath("/doctor");
+  if (to === "COMPLETED") return { message: "The consultation has ended and is marked complete." };
   return { message: "The appointment status was saved." };
 }
 

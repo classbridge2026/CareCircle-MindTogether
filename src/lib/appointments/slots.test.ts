@@ -166,6 +166,8 @@ describe("appointment transitions", () => {
     expect(canTransition({ actor: "doctor", ownsRecord: true, from: "PENDING_APPROVAL", to: "RESCHEDULED", now: after, startsAt, endsAt, reason: "The requested time has passed" }).ok).toBe(true);
     expect(canTransition({ actor: "doctor", ownsRecord: true, from: "PENDING_APPROVAL", to: "RESCHEDULED", now, startsAt, endsAt, reason: "The requested time has passed" }).ok).toBe(false);
     expect(canTransition({ actor: "doctor", ownsRecord: true, from: "PENDING_APPROVAL", to: "CHECKED_IN", now, startsAt, endsAt }).ok).toBe(false);
+    expect(canTransition({ actor: "doctor", ownsRecord: true, from: "CONFIRMED", to: "COMPLETED", now, startsAt, endsAt }).ok).toBe(true);
+    expect(canTransition({ actor: "doctor", ownsRecord: true, from: "PENDING_APPROVAL", to: "COMPLETED", now, startsAt, endsAt }).ok).toBe(false);
   });
 
   it("lets a doctor reschedule a missed visit after the scheduled time and refuses a completed one", () => {

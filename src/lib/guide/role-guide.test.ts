@@ -22,7 +22,8 @@ describe("role guide", () => {
 
   it("keeps a doctor inside their own practice", () => {
     const visit = chatWithDoctor({ pathname: "/doctor", question: "How do I start a consultation?" });
-    expect(visit.text).toMatch(/check the patient in/);
+    expect(visit.text).toMatch(/prepare the consultation/);
+    expect(visit.text).toMatch(/marks the visit complete/);
     expect(visit.text).toMatch(/another doctor/);
     expect(visit.link?.href).toBe("/doctor/appointments");
     const people = chatWithDoctor({ pathname: "/doctor/patients", question: "Who can I see?" });

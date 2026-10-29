@@ -4,6 +4,7 @@ import { formatFee } from "@/lib/catalog/money";
 import { parseUuid } from "@/lib/catalog/rules";
 import { isSchemaMismatch } from "@/lib/doctors/errors";
 import { canReceiveNewAppointment } from "@/lib/doctors/rules";
+import { completeEndedConsultations, shownAppointmentStatus } from "./finish";
 import { expireOverdueHolds } from "./payment-holds";
 import { loadBlockingIntervals, loadDoctorRules } from "./schedule-data";
 import { describeDaySlots } from "./slots";
@@ -266,6 +267,7 @@ export async function listPatientAppointments(db: PrismaClient, userId: string, 
   try {
     const patient = await db.patientProfile.findUnique({ where: { userId }, select: { id: true } });
     if (!patient) return { ok: true as const, upcoming: [], pending: [], history: [] };
+    await completeEndedConsultations(db, { now, patientProfileId: patient.id });
     const rows = await db.appointment.findMany({
       where: { patientProfileId: patient.id },
       orderBy: { startsAt: "desc" },
@@ -294,7 +296,7 @@ export async function listPatientAppointments(db: PrismaClient, userId: string, 
     });
     const mapped = rows.map((row) => ({
       id: row.id,
-      status: row.status,
+      status: shownAppointmentStatus(row.status, row.endsAt, now),
       mode: row.mode,
       when: formatBookingWhen(row.startsAt),
       startsAt: row.startsAt,

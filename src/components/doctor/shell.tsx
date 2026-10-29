@@ -170,7 +170,7 @@ export function DoctorShell({
             <LiveSearchInput id="doctor-search" destination="/doctor/patients" placeholder="Search patients by name or ID..." />
           </form>
           <div className="portal-navbar-end">
-            <NotificationBell unread={unread ?? 0} href="/doctor/notifications" items={notices} />
+            <NotificationBell unread={unread ?? 0} href="/doctor/notifications" items={notices} watch="doctor" />
             <div className="portal-account" ref={accountRef}>
               <button
                 type="button"

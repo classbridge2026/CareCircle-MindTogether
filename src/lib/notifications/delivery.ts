@@ -2,6 +2,7 @@ import type { NotificationChannel, PrismaClient } from "@prisma/client";
 import { parseUuid } from "@/lib/catalog/rules";
 import { formatBookingWhen } from "@/lib/appointments/time";
 import { isSchemaMismatch } from "@/lib/doctors/errors";
+import { noticeStamp } from "./stamp";
 
 export const MAX_DELIVERY_ATTEMPTS = 3;
 const PERMANENT_ERRORS = new Set(["not_configured", "invalid_destination", "suppressed"]);
@@ -123,6 +124,15 @@ export async function reminderChannelAllowed(
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** The signed-in person's unread in-app notices, with a stamp the open portal can compare. */
+export async function loadNoticePulse(db: PrismaClient, userId: string, role: "patient" | "doctor" | "admin") {
+  const [unread, items] = await Promise.all([
+    db.notification.count({ where: { recipientId: userId, channel: "IN_APP", readAt: null } }),
+    recentInAppNotices(db, userId, role),
+  ]);
+  return { unread, items, stamp: noticeStamp(unread, items.map((item) => item.id)) };
+}
 
 export async function recentInAppNotices(db: PrismaClient, userId: string, role: "patient" | "doctor" | "admin") {
   try {

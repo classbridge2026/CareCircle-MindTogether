@@ -107,7 +107,7 @@ export default async function DoctorConsultationPage({ params }: { params: Promi
   if (visit.mode !== "ONLINE") {
     return (
       <div className="grid gap-4">
-        <p className="rounded-[14px] border border-[#DCE7F0] bg-white p-4 text-sm text-[#17324D]">This visit is in person. There is no video room. Use the clinical workspace to document the encounter.</p>
+        <p className="rounded-[14px] border border-[#DCE7F0] bg-white p-4 text-sm text-[#17324D]">This visit is in person. Prepare the consultation here. When you end it, the system marks the visit complete.</p>
         <Link className="text-sm font-semibold text-[#0F766E]" href={`/doctor/appointments/${visit.id}`}>Back to the appointment</Link>
         {workspace}
       </div>

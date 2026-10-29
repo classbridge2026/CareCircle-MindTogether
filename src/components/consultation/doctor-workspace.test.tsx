@@ -46,7 +46,7 @@ describe("doctor consultation workspace", () => {
     expect(screen.getByText(/cannot be booked/i)).toBeTruthy();
     fireEvent.click(screen.getByRole("tab", { name: "Summary" }));
     expect(screen.getByRole("button", { name: "Prepare patient summary" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Complete consultation" })).toBeTruthy();
-    expect(screen.getByText(/does not complete the encounter/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "End consultation" })).toBeTruthy();
+    expect(screen.getByText(/marks it complete/i)).toBeTruthy();
   });
 });

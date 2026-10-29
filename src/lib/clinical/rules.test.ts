@@ -16,10 +16,12 @@ import {
 const now = new Date("2026-10-18T12:00:00.000Z");
 
 describe("clinical record permissions", () => {
-  it("opens a record only for an in-progress or completed visit by an approved clinician", () => {
+  it("opens a record after the booking is approved and keeps it for a completed visit", () => {
+    expect(visitAllowsClinicalRecord("CONFIRMED")).toBe(true);
+    expect(visitAllowsClinicalRecord("CHECKED_IN")).toBe(true);
     expect(visitAllowsClinicalRecord("IN_PROGRESS")).toBe(true);
     expect(visitAllowsClinicalRecord("COMPLETED")).toBe(true);
-    expect(visitAllowsClinicalRecord("CONFIRMED")).toBe(false);
+    expect(visitAllowsClinicalRecord("PENDING_APPROVAL")).toBe(false);
     expect(visitAllowsClinicalRecord("NO_SHOW")).toBe(false);
     expect(clinicianMayDocument({ verificationStatus: "APPROVED", userStatus: "ACTIVE", deletedAt: null })).toBe(true);
     expect(clinicianMayDocument({ verificationStatus: "SUSPENDED", userStatus: "ACTIVE", deletedAt: null })).toBe(false);

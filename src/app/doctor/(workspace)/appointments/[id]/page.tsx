@@ -21,8 +21,6 @@ import "./doctor-visit.css";
 export const metadata: Metadata = { title: "Appointment" };
 export const dynamic = "force-dynamic";
 
-const nextSteps = ["CHECKED_IN", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] as const;
-
 export default async function DoctorAppointmentPage({
   params,
   searchParams,
@@ -43,7 +41,6 @@ export default async function DoctorAppointmentPage({
   }
   const visit = result.appointment;
   const now = new Date();
-  const actions = nextSteps.filter((to) => canTransition({ actor: "doctor", ownsRecord: true, from: visit.status, to, now, startsAt: visit.startsAt, endsAt: visit.endsAt }).ok);
   const join = describeVisitJoin({
     actorUserId: user.id,
     actorStatus: user.status,
@@ -92,7 +89,8 @@ export default async function DoctorAppointmentPage({
     reason: "Doctor requested cancellation",
   }).ok;
 
-  const recordOpen = visit.status === "IN_PROGRESS" || visit.status === "COMPLETED";
+  const recordOpen = visit.status === "CONFIRMED" || visit.status === "CHECKED_IN" || visit.status === "IN_PROGRESS" || visit.status === "COMPLETED";
+  const preparing = visit.status === "CONFIRMED" || visit.status === "CHECKED_IN" || visit.status === "IN_PROGRESS";
   const paymentLabel = latestPayment ? paymentStatusLabel(latestPayment) : paid ? "Paid" : "Not recorded";
   const followUp = isFollowUpConsultation({ code: visit.serviceCode, name: visit.service });
   const missed = now.getTime() >= visit.endsAt.getTime();
@@ -202,10 +200,10 @@ export default async function DoctorAppointmentPage({
           <p className="doc-banner">The video and audio window for this visit has closed.</p>
         ) : null}
         <div className="doc-actions">
-          {online && join.canJoin ? (
+          {preparing ? (
             <Link className="doc-btn" href={`/doctor/appointments/${visit.id}/consultation`}>
-              <VisitIcon name="video" />
-              {visit.status === "IN_PROGRESS" ? "Return to consultation" : "Join consultation"}
+              <VisitIcon name={online ? "video" : "calendar"} />
+              {visit.status === "IN_PROGRESS" ? "Continue consultation" : "Prepare for consultation"}
             </Link>
           ) : null}
           <Link className="doc-btn-ghost" href={`/doctor/patients/${visit.patient.id}`}>Patient information</Link>
@@ -268,7 +266,16 @@ export default async function DoctorAppointmentPage({
               />
             </section>
           ) : null}
-          <DoctorAppointmentForms appointmentId={visit.id} actions={actions} canCancel={canCancel} />
+          {preparing ? (
+            <section className="doc-panel">
+              <h2>Prepare for consultation</h2>
+              <p className="doc-quiet">This booking is approved. Review the visit and open the consultation. When you end the consultation, the system marks it complete.</p>
+              <Link className="doc-btn" href={`/doctor/appointments/${visit.id}/consultation`}>
+                {visit.status === "IN_PROGRESS" ? "Continue consultation" : "Prepare for consultation"}
+              </Link>
+            </section>
+          ) : null}
+          <DoctorAppointmentForms appointmentId={visit.id} actions={[]} canCancel={canCancel} />
         </div>
         <aside className="doc-panel doc-timeline">
           <h2>Visit history</h2>
@@ -286,7 +293,7 @@ export default async function DoctorAppointmentPage({
               ))}
             </ol>
           )}
-          {!recordOpen ? <p className="doc-quiet">The clinical record opens when this visit is in progress or completed.</p> : null}
+          {!recordOpen ? <p className="doc-quiet">The clinical record opens after this booking is approved.</p> : null}
         </aside>
       </div>
     </main>
