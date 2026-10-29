@@ -25,7 +25,7 @@ export default async function SummariesPage() {
         <p className="rounded-2xl border border-[#d7e3ee] bg-white p-5 text-sm text-[#5b6b7c]">No clinical summary has been released to you.</p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-[#d7e3ee] bg-white">
-          <table className="w-full min-w-[680px] text-left text-sm">
+          <table className="phone-table w-full min-w-[680px] text-left text-sm">
             <thead className="text-xs tracking-wide text-[#5b6b7c] uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Patient</th>
@@ -38,11 +38,11 @@ export default async function SummariesPage() {
             <tbody>
               {summaries.summaries.map((summary) => (
                 <tr key={summary.id} className="border-t border-[#e6eef5]">
-                  <td className="px-4 py-3">{summary.subject}</td>
-                  <td className="px-4 py-3">{summary.releasedWhen}</td>
-                  <td className="px-4 py-3">{summary.doctor}<div className="text-xs text-[#5b6b7c]">{summary.specialty}</div></td>
-                  <td className="px-4 py-3">{summary.service}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label="Patient">{summary.subject}</td>
+                  <td className="px-4 py-3" data-label="Date">{summary.releasedWhen}</td>
+                  <td className="px-4 py-3" data-label="Doctor">{summary.doctor}<div className="text-xs text-[#5b6b7c]">{summary.specialty}</div></td>
+                  <td className="px-4 py-3" data-label="Summary">{summary.service}</td>
+                  <td className="px-4 py-3" data-label="Actions">
                     <StatusBadge tone="teal">Released</StatusBadge>
                     <Link className="ml-3 font-semibold text-[#0F766E]" href={`/patient/summaries/${summary.id}`}>View</Link>
                   </td>

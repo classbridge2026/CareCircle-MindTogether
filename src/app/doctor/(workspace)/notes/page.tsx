@@ -57,7 +57,7 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
           <p className="mt-6 text-sm text-[#5b6b7c]">{q ? "No note matches that patient." : "No notes are stored in this view."}</p>
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="phone-table w-full min-w-[640px] text-left text-sm">
               <thead className="text-xs tracking-wide text-[#5b6b7c] uppercase">
                 <tr>
                   <th className="px-2 py-2 font-medium">Date</th>
@@ -69,10 +69,10 @@ export default async function NotesPage({ searchParams }: { searchParams: Promis
               <tbody>
                 {result.notes.map((note) => (
                   <tr key={note.id} className="border-t border-[#e6eef5]">
-                    <td className="px-2 py-3">{note.when}</td>
-                    <td className="px-2 py-3"><Link className="font-semibold text-[#0C2B45]" href={`/doctor/patients/${note.patientId}`}>{note.patient}</Link></td>
-                    <td className="px-2 py-3">{note.kind}</td>
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-3" data-label="Date">{note.when}</td>
+                    <td className="px-2 py-3" data-label="Patient"><Link className="font-semibold text-[#0C2B45]" href={`/doctor/patients/${note.patientId}`}>{note.patient}</Link></td>
+                    <td className="px-2 py-3" data-label="Type">{note.kind}</td>
+                    <td className="px-2 py-3" data-label="Status">
                       <StatusBadge tone={note.state === "FINALIZED" ? "navy" : "slate"}>{note.state === "FINALIZED" ? "Finalized" : "Draft"}</StatusBadge>
                       <StatusBadge tone={note.release === "RELEASED" ? "teal" : "slate"}>{releaseLabel(note.release)}</StatusBadge>
                       <Link className="ml-3 font-semibold text-[#0F766E]" href={`/doctor/appointments/${note.appointmentId}/record`}>Open</Link>

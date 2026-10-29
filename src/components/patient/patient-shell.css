@@ -211,3 +211,213 @@
     display: none;
   }
 }
+
+.patient-scroll-frame {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.patient-scroll-thumb {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  z-index: 5;
+  width: 4px;
+  border-radius: 999px;
+  background: rgba(12, 43, 69, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.patient-tabbar,
+.patient-more,
+.patient-more-backdrop {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .patient-app .patient-drawer,
+  .patient-app .patient-drawer-backdrop {
+    display: none;
+  }
+
+  .doctor-app .doctor-scroll {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .doctor-app .guide {
+    bottom: calc(4.9rem + env(safe-area-inset-bottom, 0px));
+    z-index: 35;
+  }
+
+  .patient-app .portal-search {
+    display: none;
+  }
+
+  .patient-app .patient-scroll {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .patient-app .patient-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .patient-app .patient-scroll-thumb.is-visible {
+    opacity: 1;
+  }
+
+  .patient-app .portal-navbar,
+  .doctor-app .portal-navbar {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .patient-app .portal-navbar {
+    height: calc(3.6rem + env(safe-area-inset-top, 0px));
+    padding-inline: 0.75rem;
+  }
+
+  .portal-nav-toggle {
+    display: none;
+  }
+
+  .patient-app .portal-nav-toggle.is-current {
+    background: #e7f4f2;
+    color: #0f766e;
+  }
+
+  .patient-app .guide {
+    bottom: calc(4.9rem + env(safe-area-inset-bottom, 0px));
+    z-index: 35;
+  }
+
+  .patient-tabbar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    height: calc(4.15rem + env(safe-area-inset-bottom, 0px));
+    padding: 0.3rem 0.2rem calc(0.25rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #d7e3ee;
+    background: #fff;
+    box-shadow: 0 -0.35rem 1.1rem rgba(12, 43, 69, 0.06);
+  }
+
+  .patient-tabbar a,
+  .patient-tabbar button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.18rem;
+    min-width: 0;
+    border: 0;
+    border-radius: 0.85rem;
+    background: transparent;
+    color: #6b7c93;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.1;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .patient-tabbar a[aria-current="page"],
+  .patient-tabbar button.is-current {
+    background: #e7f4f2;
+    color: #0f766e;
+  }
+
+  .patient-tabbar a:focus-visible,
+  .patient-tabbar button:focus-visible {
+    outline: 2px solid #0f766e;
+    outline-offset: 2px;
+  }
+
+  .patient-tabbar svg {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+
+  .patient-tabbar span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .patient-more-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    display: block;
+    border: 0;
+    background: rgba(12, 43, 69, 0.42);
+    cursor: pointer;
+  }
+
+  .patient-more {
+    position: fixed;
+    right: 0.7rem;
+    bottom: calc(4.7rem + env(safe-area-inset-bottom, 0px));
+    left: 0.7rem;
+    z-index: 46;
+    display: grid;
+    gap: 0.15rem;
+    max-height: min(70dvh, 26rem);
+    overflow: auto;
+    padding: 0.45rem;
+    border-radius: 1.2rem;
+    background: #fff;
+    box-shadow: 0 0.8rem 2rem rgba(12, 43, 69, 0.18);
+  }
+
+  .patient-more a,
+  .patient-more button {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.75rem;
+    border: 0;
+    border-radius: 0.8rem;
+    background: transparent;
+    color: #10233c;
+    font-size: 0.92rem;
+    font-weight: 700;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .patient-more a[aria-current="page"],
+  .patient-more a:hover,
+  .patient-more button:hover {
+    background: #f3f8fc;
+  }
+
+  .patient-more a:focus-visible,
+  .patient-more button:focus-visible {
+    outline: 2px solid #0f766e;
+    outline-offset: 2px;
+  }
+
+  .patient-more svg {
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+    color: #0f766e;
+  }
+}

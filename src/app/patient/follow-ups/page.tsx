@@ -48,7 +48,7 @@ export default async function PatientFollowUpsPage({ searchParams }: { searchPar
         <p className="rounded-2xl border border-[#d7e3ee] bg-white p-5 text-sm text-[#5b6b7c]">No follow-up is in this view.</p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-[#d7e3ee] bg-white">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="phone-table w-full min-w-[720px] text-left text-sm">
             <thead className="text-xs tracking-wide text-[#5b6b7c] uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Date</th>
@@ -61,16 +61,16 @@ export default async function PatientFollowUpsPage({ searchParams }: { searchPar
             <tbody>
               {result.visits.map((visit) => (
                 <tr key={visit.id} className="border-t border-[#e6eef5]">
-                  <td className="px-4 py-3">{visit.when}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label="Date">{visit.when}</td>
+                  <td className="px-4 py-3" data-label="Doctor">
                     <span className="flex items-center gap-2">
                       <ProfilePhoto userId={visit.doctorUserId} name={visit.doctor} version={visit.doctorImageVersion} size={32} alt="" />
                       {visit.doctor}
                     </span>
                   </td>
-                  <td className="px-4 py-3">{visit.service}<div className="text-xs text-[#5b6b7c]">{visit.specialty} · {visit.mode === "ONLINE" ? "Online" : "In person"}</div></td>
-                  <td className="px-4 py-3"><StatusBadge tone={appointmentStatusTone(visit.status)}>{appointmentStatusLabel(visit.status)}</StatusBadge></td>
-                  <td className="px-4 py-3"><Link className="font-semibold text-[#0F766E]" href={`/patient/appointments/${visit.id}`}>View</Link></td>
+                  <td className="px-4 py-3" data-label="Reason">{visit.service}<div className="text-xs text-[#5b6b7c]">{visit.specialty} · {visit.mode === "ONLINE" ? "Online" : "In person"}</div></td>
+                  <td className="px-4 py-3" data-label="Status"><StatusBadge tone={appointmentStatusTone(visit.status)}>{appointmentStatusLabel(visit.status)}</StatusBadge></td>
+                  <td className="px-4 py-3" data-label="Actions"><Link className="font-semibold text-[#0F766E]" href={`/patient/appointments/${visit.id}`}>View</Link></td>
                 </tr>
               ))}
             </tbody>

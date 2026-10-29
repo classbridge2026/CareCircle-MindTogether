@@ -51,7 +51,7 @@ export default async function FollowUpsPage({ searchParams }: { searchParams: Pr
           <p className="mt-6 text-sm text-[#5b6b7c]">No follow-up is in this view.</p>
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="phone-table w-full min-w-[720px] text-left text-sm">
               <thead className="text-xs tracking-wide text-[#5b6b7c] uppercase">
                 <tr>
                   <th className="px-2 py-2 font-medium">Patient</th>
@@ -64,16 +64,16 @@ export default async function FollowUpsPage({ searchParams }: { searchParams: Pr
               <tbody>
                 {result.rows.map((row) => (
                   <tr key={row.id} className="border-t border-[#e6eef5]">
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-3" data-label="Patient">
                       <Link className="flex items-center gap-2 font-semibold text-[#0C2B45]" href={`/doctor/patients/${row.patientId}`}>
                         <ProfilePhoto userId={row.patientUserId} name={row.patient} version={row.patientImageVersion} size={32} alt="" />
                         {row.patient}
                       </Link>
                     </td>
-                    <td className="px-2 py-3">{row.lastVisit ?? row.sourceService ?? "—"}</td>
-                    <td className="px-2 py-3">{row.when}<div className="text-xs text-[#5b6b7c]">{row.service}</div></td>
-                    <td className="px-2 py-3"><StatusBadge tone={appointmentStatusTone(row.status)}>{appointmentStatusLabel(row.status)}</StatusBadge></td>
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-3" data-label="Last visit">{row.lastVisit ?? row.sourceService ?? "—"}</td>
+                    <td className="px-2 py-3" data-label="Next follow-up">{row.when}<div className="text-xs text-[#5b6b7c]">{row.service}</div></td>
+                    <td className="px-2 py-3" data-label="Status"><StatusBadge tone={appointmentStatusTone(row.status)}>{appointmentStatusLabel(row.status)}</StatusBadge></td>
+                    <td className="px-2 py-3" data-label="Actions">
                       <Link className="font-semibold text-[#0F766E]" href={`/doctor/appointments/${row.id}`}>View</Link>
                       {row.sourceId ? <Link className="ml-3 font-semibold text-[#0F766E]" href={`/doctor/appointments/${row.sourceId}/record`}>Notes</Link> : null}
                     </td>

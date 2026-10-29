@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { faBell } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { markAllNotificationsReadAction, markViewedNotificationsAction } from "./actions";
 import "./bell.css";
@@ -34,6 +34,7 @@ export function NotificationBell({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [box, setBox] = useState<{ top: number; right: number } | null>(null);
+  const [sheet, setSheet] = useState(false);
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
   const [cleared, setCleared] = useState(false);
   const unreadRef = useRef(unread);
@@ -53,10 +54,12 @@ export function NotificationBell({
   useEffect(() => {
     if (!open) return;
     function place() {
+      const narrow = window.matchMedia("(max-width: 1023px)").matches;
+      setSheet(narrow);
       const button = buttonRef.current;
       if (!button) return;
       const rect = button.getBoundingClientRect();
-      setBox({ top: rect.bottom + 8, right: Math.max(8, window.innerWidth - rect.right) });
+      setBox(narrow ? { top: 0, right: 0 } : { top: rect.bottom + 8, right: Math.max(8, window.innerWidth - rect.right) });
     }
     function onPointer(event: MouseEvent) {
       const target = event.target as Node;
@@ -68,11 +71,14 @@ export function NotificationBell({
     }
     place();
     panelRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    if (window.matchMedia("(max-width: 1023px)").matches) document.body.style.overflow = "hidden";
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
     window.addEventListener("mousedown", onPointer);
     window.addEventListener("keydown", onKey);
     return () => {
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("mousedown", onPointer);
@@ -126,39 +132,77 @@ export function NotificationBell({
   const panel = open && mounted && box ? createPortal(
     <div
       ref={panelRef}
-      className="bell-panel"
+      className={sheet ? "bell-panel is-sheet" : "bell-panel"}
       role="dialog"
-      aria-modal="false"
+      aria-modal={sheet}
       aria-labelledby={titleId}
       tabIndex={-1}
-      style={{ top: box.top, right: box.right }}
+      style={sheet ? undefined : { top: box.top, right: box.right }}
     >
-      <header className="bell-head">
-        <div>
-          <h2 id={titleId}>Notifications</h2>
-          <p>{badge === 0 ? "None unread" : `${badge} unread`}</p>
-        </div>
-        {badge > 0 ? (
-          <button type="button" onClick={readAll}>Mark all as read</button>
-        ) : null}
-      </header>
-      {visible.length === 0 ? <p className="bell-empty">No new notifications.</p> : (
-        <ul className="bell-list">
+      {sheet ? (
+        <header className="bell-screen-bar">
+          <button type="button" className="bell-screen-back" aria-label="Back" onClick={() => setOpen(false)}>
+            <FontAwesomeIcon icon={faChevronLeft} aria-hidden="true" />
+          </button>
+          <div>
+            <h2 id={titleId}>Notifications</h2>
+            <p>{badge === 0 ? "You're all caught up" : `${badge} unread`}</p>
+          </div>
+          {badge > 0 ? (
+            <button type="button" className="bell-screen-mark" onClick={readAll}>Mark all</button>
+          ) : (
+            <span className="bell-screen-mark" />
+          )}
+        </header>
+      ) : (
+        <header className="bell-head">
+          <div>
+            <h2 id={titleId}>Notifications</h2>
+            <p>{badge === 0 ? "None unread" : `${badge} unread`}</p>
+          </div>
+          {badge > 0 ? (
+            <button type="button" onClick={readAll}>Mark all as read</button>
+          ) : null}
+        </header>
+      )}
+      {visible.length === 0 ? (
+        sheet ? (
+          <div className="bell-screen-empty">
+            <FontAwesomeIcon icon={faBell} aria-hidden="true" />
+            <p>No notifications yet</p>
+            <span>New notices will show up here.</span>
+          </div>
+        ) : (
+          <p className="bell-empty">No new notifications.</p>
+        )
+      ) : (
+        <ul className={sheet ? "bell-list bell-screen-list" : "bell-list"}>
           {visible.map((item) => (
             <li key={item.id}>
-              <div className="bell-row">
-                <button type="button" className="bell-open" onClick={() => readOne(item, true)}>
-                  <strong>{item.title}</strong>
-                  {item.preview ? <span>{item.preview}</span> : null}
+              {sheet ? (
+                <button type="button" className="bell-screen-open" onClick={() => readOne(item, true)}>
+                  <span className="bell-dot" aria-hidden="true" />
+                  <span className="bell-screen-copy">
+                    <strong>{item.title}</strong>
+                    {item.preview ? <span>{item.preview}</span> : null}
+                  </span>
                   {item.when ? <time>{item.when}</time> : null}
                 </button>
-                <button type="button" className="bell-read" onClick={() => readOne(item, false)}>Mark read</button>
-              </div>
+              ) : (
+                <div className="bell-row">
+                  <button type="button" className="bell-open" onClick={() => readOne(item, true)}>
+                    <strong>{item.title}</strong>
+                    {item.preview ? <span>{item.preview}</span> : null}
+                    {item.when ? <time>{item.when}</time> : null}
+                  </button>
+                  <button type="button" className="bell-read" onClick={() => readOne(item, false)}>Mark read</button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
-      {badge > visible.length ? <p className="bell-more">{badge - visible.length} more unread on the notifications page.</p> : null}
+      {badge > visible.length ? <p className="bell-more">{badge - visible.length} more in your inbox.</p> : null}
       <Link className="bell-all" href={href} onClick={() => setOpen(false)}>See all notifications</Link>
     </div>,
     document.body,

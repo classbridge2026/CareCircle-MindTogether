@@ -10,7 +10,7 @@ export function MarkReadForm({ notificationId }: { notificationId: string }) {
   return (
     <form action={action}>
       <input name="notificationId" type="hidden" value={notificationId} />
-      <button className="text-sm font-semibold text-brand-teal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal" disabled={pending} type="submit">
+      <button className="notify-tap text-sm font-semibold text-brand-teal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal" disabled={pending} type="submit">
         {pending ? "Saving…" : "Mark read"}
       </button>
       {state.message ? <p className="sr-only" role={state.tone === "error" ? "alert" : "status"}>{state.message}</p> : null}

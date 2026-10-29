@@ -47,7 +47,7 @@ export default async function PatientAppointmentsPage({ searchParams }: { search
         </div>
         <Link className="inline-flex h-11 items-center rounded-lg bg-[#0F766E] px-4 text-sm font-semibold text-white" href="/patient/find">Book appointment</Link>
       </header>
-      <nav className="flex gap-2" aria-label="Appointment views">
+      <nav className="flex flex-wrap gap-2" aria-label="Appointment views">
         {tabs.map((tab) => (
           <Link key={tab.id} href={tab.id === "upcoming" ? "/patient/appointments" : `/patient/appointments?view=${tab.id}`} aria-current={view === tab.id ? "page" : undefined} className={`rounded-lg px-3 py-2 text-sm font-semibold ${view === tab.id ? "bg-[#0F766E] text-white" : "bg-white text-[#0C2B45]"}`}>
             {tab.label}
@@ -58,7 +58,7 @@ export default async function PatientAppointmentsPage({ searchParams }: { search
         <p className="rounded-2xl border border-[#d7e3ee] bg-white p-5 text-sm text-[#5b6b7c]">{view === "upcoming" ? "You have no upcoming appointments." : view === "pending" ? "You have no bookings waiting for a doctor." : "Nothing is stored in this view."}</p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-[#d7e3ee] bg-white">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="phone-table w-full min-w-[760px] text-left text-sm">
             <thead className="text-xs tracking-wide text-[#5b6b7c] uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Date & time</th>
@@ -71,16 +71,16 @@ export default async function PatientAppointmentsPage({ searchParams }: { search
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id} className="border-t border-[#e6eef5]">
-                  <td className="px-4 py-3">{row.when}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label="When">{row.when}</td>
+                  <td className="px-4 py-3" data-label="Doctor">
                     <span className="flex items-center gap-2">
                       <ProfilePhoto userId={row.doctorUserId} name={row.doctor} version={row.doctorImageVersion} size={32} alt="" />
                       {row.doctor}
                     </span>
                   </td>
-                  <td className="px-4 py-3">{row.service}<div className="text-xs text-[#5b6b7c]">{row.specialty} · {row.mode === "ONLINE" ? "Online" : "In person"} · {row.fee}</div></td>
-                  <td className="px-4 py-3"><StatusBadge tone={appointmentStatusTone(row.status)}>{appointmentStatusLabel(row.status)}</StatusBadge></td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label="Type">{row.service}<div className="text-xs text-[#5b6b7c]">{row.specialty} · {row.mode === "ONLINE" ? "Online" : "In person"} · {row.fee}</div></td>
+                  <td className="px-4 py-3" data-label="Status"><StatusBadge tone={appointmentStatusTone(row.status)}>{appointmentStatusLabel(row.status)}</StatusBadge></td>
+                  <td className="px-4 py-3" data-label="Actions">
                     <Link className="font-semibold text-[#0F766E]" href={`/patient/appointments/${row.id}`}>View</Link>
                   </td>
                 </tr>

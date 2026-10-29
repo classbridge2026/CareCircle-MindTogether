@@ -48,6 +48,17 @@ const links: Array<{ href: string; label: string; icon: IconDefinition; exact?: 
   { href: "/patient/profile", label: "Profile", icon: faUser },
 ];
 
+const tabOrder = ["/patient", "/patient/find", "/patient/appointments", "/patient/summaries", "/patient/profile"] as const;
+const tabLabel: Record<(typeof tabOrder)[number], string> = {
+  "/patient": "Home",
+  "/patient/find": "Find",
+  "/patient/appointments": "Visits",
+  "/patient/summaries": "Records",
+  "/patient/profile": "Profile",
+};
+const tabs = tabOrder.map((href) => links.find((link) => link.href === href)!);
+const moreLinks = links.filter((link) => !tabOrder.includes(link.href as (typeof tabOrder)[number]));
+
 function currentHref(pathname: string) {
   if (pathname.startsWith("/patient/doctors") || pathname.startsWith("/patient/book")) return "/patient/find";
   let best: string | null = null;
@@ -79,17 +90,20 @@ export function PatientShell({
   const active = currentHref(pathname);
   const room = /\/patient\/appointments\/[^/]+\/consultation\/?$/.test(pathname);
   const [accountPath, setAccountPath] = useState<string | null>(null);
-  const [openPath, setOpenPath] = useState<string | null>(null);
+  const [morePath, setMorePath] = useState<string | null>(null);
   const accountRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollThumbRef = useRef<HTMLDivElement>(null);
   const accountOpen = accountPath === pathname;
-  const open = openPath === pathname;
+  const moreOpen = morePath === pathname;
+  const moreCurrent = moreLinks.some((link) => link.href === active);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setAccountPath(null);
-        setOpenPath(null);
+        setMorePath(null);
       }
     }
     function onPointer(event: MouseEvent) {
@@ -103,6 +117,48 @@ export function PatientShell({
     };
   }, []);
 
+  useEffect(() => {
+    const node = scrollRef.current;
+    const thumb = scrollThumbRef.current;
+    if (!node || !thumb) return;
+    const media = window.matchMedia("(max-width: 1023px)");
+    let timer = 0;
+
+    function hide() {
+      thumb?.classList.remove("is-visible");
+    }
+
+    function onScroll() {
+      const scroller = node;
+      const marker = thumb;
+      if (!scroller || !marker || !media.matches) {
+        hide();
+        return;
+      }
+      const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+      if (maxScroll <= 1) {
+        hide();
+        return;
+      }
+      const height = Math.max(36, (scroller.clientHeight / scroller.scrollHeight) * scroller.clientHeight);
+      const top = (scroller.scrollTop / maxScroll) * (scroller.clientHeight - height);
+      marker.style.height = `${height}px`;
+      marker.style.transform = `translateY(${top}px)`;
+      marker.classList.add("is-visible");
+      window.clearTimeout(timer);
+      timer = window.setTimeout(hide, 700);
+    }
+
+    node.addEventListener("scroll", onScroll, { passive: true });
+    media.addEventListener("change", hide);
+    return () => {
+      node.removeEventListener("scroll", onScroll);
+      media.removeEventListener("change", hide);
+      window.clearTimeout(timer);
+      hide();
+    };
+  }, [room]);
+
   if (room) {
     return (
       <div className="fixed inset-0 overflow-hidden bg-[#F3F8FC] text-[#0C2B45]">
@@ -112,14 +168,11 @@ export function PatientShell({
   }
 
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-[#F3F8FC] text-[#10233c]">
-      {open ? (
-        <button aria-label="Close navigation" className="fixed inset-0 z-30 bg-[#0C2B45]/40 lg:hidden" type="button" onClick={() => setOpenPath(null)} />
-      ) : null}
+    <div className="patient-app fixed inset-0 flex overflow-hidden bg-[#F3F8FC] text-[#10233c]">
       <aside
         id="patient-navigation"
         data-no-busy=""
-        className={`fixed inset-y-0 left-0 z-40 flex h-dvh w-[248px] shrink-0 flex-col bg-[#0C2B45] text-white transition-transform lg:static lg:translate-x-0 ${collapsed ? "lg:w-[76px]" : ""} ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`patient-drawer fixed inset-y-0 left-0 z-40 flex h-dvh w-[248px] shrink-0 -translate-x-full flex-col bg-[#0C2B45] text-white transition-transform lg:static lg:translate-x-0 ${collapsed ? "lg:w-[76px]" : ""}`}
       >
         <div className="flex items-center justify-between gap-2 px-3 py-4">
           <Link href="/patient" className="flex min-w-0 items-center gap-3 px-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
@@ -155,16 +208,6 @@ export function PatientShell({
       </aside>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="portal-navbar">
-          <button
-            type="button"
-            className="portal-nav-toggle"
-            aria-expanded={open}
-            aria-controls="patient-navigation"
-            onClick={() => setOpenPath(open ? null : pathname)}
-          >
-            <FontAwesomeIcon icon={open ? faXmark : faBars} aria-hidden="true" />
-            <span className="sr-only">{open ? "Close navigation" : "Open navigation"}</span>
-          </button>
           <form className="portal-search" role="search" onSubmit={(event) => event.preventDefault()}>
             <FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" />
             <label className="sr-only" htmlFor="portal-search">
@@ -218,9 +261,46 @@ export function PatientShell({
             </div>
           </div>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <main className="px-4 py-6 lg:px-8 lg:py-7">{children}</main>
+        <div className="patient-scroll-frame">
+          <div ref={scrollRef} className="patient-scroll min-h-0 flex-1 overflow-y-auto">
+            <main className="px-4 py-6 lg:px-8 lg:py-7">{children}</main>
+          </div>
+          <div ref={scrollThumbRef} className="patient-scroll-thumb" aria-hidden="true" />
         </div>
+        <nav className="patient-tabbar" aria-label="Patient">
+          {tabs.map((link) => {
+            const current = link.href === active;
+            return (
+              <Link key={link.href} href={link.href} prefetch={false} aria-current={current ? "page" : undefined} onClick={() => setMorePath(null)}>
+                <FontAwesomeIcon icon={link.icon} aria-hidden="true" />
+                <span>{tabLabel[link.href as (typeof tabOrder)[number]]}</span>
+              </Link>
+            );
+          })}
+          <button type="button" className={moreCurrent || moreOpen ? "is-current" : undefined} aria-expanded={moreOpen} aria-controls="patient-more" onClick={() => setMorePath(moreOpen ? null : pathname)}>
+            <FontAwesomeIcon icon={moreOpen ? faXmark : faBars} aria-hidden="true" />
+            <span>More</span>
+          </button>
+        </nav>
+        {moreOpen ? (
+          <>
+            <button type="button" className="patient-more-backdrop" aria-label="Close more menu" onClick={() => setMorePath(null)} />
+            <div id="patient-more" className="patient-more" role="dialog" aria-modal="true" aria-label="More">
+              {moreLinks.map((link) => (
+                <Link key={link.href} href={link.href} prefetch={false} aria-current={link.href === active ? "page" : undefined} onClick={() => setMorePath(null)}>
+                  <FontAwesomeIcon icon={link.icon} aria-hidden="true" />
+                  {link.label}
+                </Link>
+              ))}
+              <form action={signOutAction}>
+                <button type="submit">
+                  <FontAwesomeIcon icon={faRightFromBracket} aria-hidden="true" />
+                  Log Out
+                </button>
+              </form>
+            </div>
+          </>
+        ) : null}
         <PatientCallAlert />
         <PatientGuide />
       </div>

@@ -83,14 +83,14 @@ export default async function DoctorAppointmentsPage({
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_280px]">
         <section className="rounded-2xl border border-[#d7e3ee] bg-white p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Link className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#d7e3ee] text-[#0C2B45]" href={scheduleHref({ view, date: shiftAnchor(view, anchor, -1), ...filters })} aria-label="Previous">‹</Link>
-              <p className="text-sm font-semibold text-[#0C2B45]">{rangeLabel(view, anchor)}</p>
-              <Link className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#d7e3ee] text-[#0C2B45]" href={scheduleHref({ view, date: shiftAnchor(view, anchor, 1), ...filters })} aria-label="Next">›</Link>
+            <div className="flex min-w-0 items-center gap-2">
+              <Link className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#d7e3ee] text-[#0C2B45] sm:h-9 sm:w-9" href={scheduleHref({ view, date: shiftAnchor(view, anchor, -1), ...filters })} aria-label="Previous">‹</Link>
+              <p className="min-w-0 text-sm font-semibold text-[#0C2B45]">{rangeLabel(view, anchor)}</p>
+              <Link className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#d7e3ee] text-[#0C2B45] sm:h-9 sm:w-9" href={scheduleHref({ view, date: shiftAnchor(view, anchor, 1), ...filters })} aria-label="Next">›</Link>
             </div>
-            <div className="flex rounded-lg bg-[#F3F8FC] p-1" role="group" aria-label="Calendar view">
+            <div className="flex max-w-full flex-wrap rounded-lg bg-[#F3F8FC] p-1" role="group" aria-label="Calendar view">
               {views.map((item) => (
-                <Link key={item} href={scheduleHref({ view: item, date, ...filters })} aria-current={item === view ? "page" : undefined} className={`rounded-md px-3 py-1.5 text-sm font-semibold capitalize ${item === view ? "bg-[#0F766E] text-white" : "text-[#0C2B45]"}`}>
+                <Link key={item} href={scheduleHref({ view: item, date, ...filters })} aria-current={item === view ? "page" : undefined} className={`rounded-md px-3 py-2 text-sm font-semibold capitalize sm:py-1.5 ${item === view ? "bg-[#0F766E] text-white" : "text-[#0C2B45]"}`}>
                   {item}
                 </Link>
               ))}
@@ -170,7 +170,7 @@ function AppointmentTable({ rows }: { rows: Array<{ id: string; when: string; pa
   if (rows.length === 0) return <p className="rounded-xl bg-[#F3F8FC] p-4 text-sm text-[#5b6b7c]">Nothing is booked in this month.</p>;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] text-left text-sm">
+      <table className="phone-table w-full min-w-[640px] text-left text-sm">
         <thead className="text-xs tracking-wide text-[#5b6b7c] uppercase">
           <tr>
             <th className="px-2 py-2 font-medium">When</th>
@@ -183,11 +183,11 @@ function AppointmentTable({ rows }: { rows: Array<{ id: string; when: string; pa
         <tbody>
           {rows.map((row) => (
             <tr key={row.id} className="border-t border-[#e6eef5]">
-              <td className="px-2 py-3"><Link className="font-semibold text-[#0F766E]" href={`/doctor/appointments/${row.id}`}>{row.when}</Link></td>
-              <td className="px-2 py-3"><Link className="font-medium text-[#0C2B45]" href={`/doctor/patients/${row.patientId}`}>{row.patient}</Link></td>
-              <td className="px-2 py-3">{row.service}</td>
-              <td className="px-2 py-3">{row.mode === "ONLINE" ? "Online" : "In person"}</td>
-              <td className="px-2 py-3"><StatusBadge tone={appointmentStatusTone(row.status)}>{appointmentStatusLabel(row.status)}</StatusBadge></td>
+              <td className="px-2 py-3" data-label="When"><Link className="font-semibold text-[#0F766E]" href={`/doctor/appointments/${row.id}`}>{row.when}</Link></td>
+              <td className="px-2 py-3" data-label="Patient"><Link className="font-medium text-[#0C2B45]" href={`/doctor/patients/${row.patientId}`}>{row.patient}</Link></td>
+              <td className="px-2 py-3" data-label="Service">{row.service}</td>
+              <td className="px-2 py-3" data-label="Mode">{row.mode === "ONLINE" ? "Online" : "In person"}</td>
+              <td className="px-2 py-3" data-label="Status"><StatusBadge tone={appointmentStatusTone(row.status)}>{appointmentStatusLabel(row.status)}</StatusBadge></td>
             </tr>
           ))}
         </tbody>
@@ -245,16 +245,26 @@ function MonthGrid({
 }) {
   return (
     <div>
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-[#5b6b7c]">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => <div key={day}>{day}</div>)}
+      <div className="grid min-w-0 grid-cols-7 gap-0.5 text-center text-[0.65rem] font-semibold text-[#5b6b7c] sm:gap-1 sm:text-xs">
+        {(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const).map((day) => (
+          <div key={day} className="min-w-0">
+            <span className="sm:hidden">{day.slice(0, 1)}</span>
+            <span className="hidden sm:inline">{day}</span>
+          </div>
+        ))}
       </div>
-      <div className="mt-2 grid grid-cols-7 gap-1">
+      <div className="mt-2 grid min-w-0 grid-cols-7 gap-0.5 sm:gap-1">
         {monthCells(anchor).map((cell) => {
           const count = byDay.get(cell.date)?.length ?? 0;
           return (
-            <Link key={cell.date} href={scheduleHref({ view: "day", date: cell.date, ...filters })} className={`min-h-16 rounded-lg p-2 text-left text-xs ${cell.inMonth ? "bg-[#F3F8FC] text-[#0C2B45]" : "text-[#9aa8b5]"}`}>
+            <Link key={cell.date} href={scheduleHref({ view: "day", date: cell.date, ...filters })} className={`flex min-h-14 min-w-0 flex-col overflow-hidden rounded-lg p-1 text-left text-[0.65rem] sm:min-h-16 sm:p-2 sm:text-xs ${cell.inMonth ? "bg-[#F3F8FC] text-[#0C2B45]" : "text-[#9aa8b5]"}`}>
               <span className="font-semibold">{Number(cell.date.slice(8))}</span>
-              {count > 0 ? <span className="mt-1 block text-[#0F766E]">{count} visit{count === 1 ? "" : "s"}</span> : null}
+              {count > 0 ? (
+                <span className="mt-1 block leading-tight text-[#0F766E]">
+                  <span className="sm:hidden">{count}</span>
+                  <span className="hidden sm:inline">{count} visit{count === 1 ? "" : "s"}</span>
+                </span>
+              ) : null}
             </Link>
           );
         })}

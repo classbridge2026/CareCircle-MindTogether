@@ -133,3 +133,52 @@ a[data-loading="true"]::before {
   border-radius: 9999px;
   clip-path: circle(50%);
 }
+
+/* Phone tables keep the desktop grid. Below 768px each row becomes a labeled card. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
+
+  .phone-table {
+    min-width: 0;
+  }
+
+  .phone-table thead {
+    display: none;
+  }
+
+  .phone-table,
+  .phone-table tbody,
+  .phone-table tr,
+  .phone-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .phone-table tr {
+    padding: 0.75rem 0.9rem;
+    border-top: 1px solid #e6eef5;
+  }
+
+  .phone-table td {
+    display: grid;
+    grid-template-columns: 6.4rem minmax(0, 1fr);
+    gap: 0.35rem 0.6rem;
+    align-items: start;
+    padding: 0.28rem 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .phone-table td::before {
+    content: attr(data-label);
+    color: #6b7c93;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}

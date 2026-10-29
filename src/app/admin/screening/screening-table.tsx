@@ -54,7 +54,7 @@ export function ScreeningTable({ tools, canGovern }: { tools: ScreeningToolRow[]
     <>
       <div className="overflow-hidden rounded-2xl border border-brand-line bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] border-separate border-spacing-0 text-left text-sm">
+          <table className="phone-table w-full min-w-[820px] border-separate border-spacing-0 text-left text-sm">
             <thead>
               <tr>
                 {["Name", "Category", "Version", "Approval", "License", "Status", "Actions"].map((heading) => (
@@ -65,13 +65,13 @@ export function ScreeningTable({ tools, canGovern }: { tools: ScreeningToolRow[]
             <tbody>
               {tools.map((item) => (
                 <tr key={item.id} className="hover:bg-[#f3f8fc]">
-                  <td className={`${bodyCell} border-t border-brand-line font-semibold text-brand-navy`}>{item.name}<div className="font-normal text-brand-muted">{item.abbreviation}</div></td>
-                  <td className={`${bodyCell} border-t border-brand-line`}>{label(item.category)}</td>
-                  <td className={`${bodyCell} border-t border-brand-line`}>{item.version}</td>
-                  <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.approvalState)}`}>{label(item.approvalState)}</span></td>
-                  <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.licenseStatus)}`}>{label(item.licenseStatus)}</span></td>
-                  <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.availability)}`}>{label(item.availability)}</span></td>
-                  <td className={`${bodyCell} border-t border-brand-line`}>
+                  <td className={`${bodyCell} border-t border-brand-line font-semibold text-brand-navy`} data-label="Name">{item.name}<div className="font-normal text-brand-muted">{item.abbreviation}</div></td>
+                  <td className={`${bodyCell} border-t border-brand-line`} data-label="Category">{label(item.category)}</td>
+                  <td className={`${bodyCell} border-t border-brand-line`} data-label="Version">{item.version}</td>
+                  <td className={`${bodyCell} border-t border-brand-line`} data-label="Approval"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.approvalState)}`}>{label(item.approvalState)}</span></td>
+                  <td className={`${bodyCell} border-t border-brand-line`} data-label="License"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.licenseStatus)}`}>{label(item.licenseStatus)}</span></td>
+                  <td className={`${bodyCell} border-t border-brand-line`} data-label="Status"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass(item.availability)}`}>{label(item.availability)}</span></td>
+                  <td className={`${bodyCell} border-t border-brand-line`} data-label="Actions">
                     <div className="screen-actions">
                       <div className="screen-action-row">
                         <button type="button" className="screen-action screen-action-view" onClick={() => setOpenId(item.id)}>

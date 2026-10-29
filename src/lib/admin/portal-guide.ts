@@ -899,7 +899,7 @@ export function chatWithPortal(input: { question: string; pathname: string; supe
   if (attention) return attention;
   const reply = answerPortalQuestion({ ...input, question });
   if (/^(please )?(take me|go|open|show me|bring me)\b/.test(question) && !/\bhow\b/.test(question) && reply.links[0]) {
-    return { topicId: reply.topicId, text: `Opening ${reply.links[0].label}.`, link: reply.links[0], navigate: true };
+    return { topicId: reply.topicId, text: `Click to go to ${reply.links[0].label}.`, link: reply.links[0] };
   }
   const next = reply.topicId ? NEXT_STEP[reply.topicId] : undefined;
   const howTo = /\b(how|add|create|approve|activate|verify)\b/.test(question);

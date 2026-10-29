@@ -400,7 +400,7 @@ export function chatWithPatient(input: { question: string; pathname: string; pre
   if (next) return next;
   if (/^(please )?(take me|go|open|show me)\b/.test(question) && !/\bhow\b/.test(question)) {
     const reply = answer("patient", PATIENT_TOPICS, question, input.pathname);
-    if (reply.link) return { ...reply, text: `Opening ${reply.link.label}.`, navigate: true };
+    if (reply.link) return { ...reply, text: `Click to go to ${reply.link.label}.` };
   }
   return answer("patient", PATIENT_TOPICS, question, input.pathname);
 }
@@ -418,7 +418,7 @@ export function chatWithDoctor(input: { question: string; pathname: string; prev
   if (next) return next;
   if (/^(please )?(take me|go|open|show me)\b/.test(question) && !/\bhow\b/.test(question)) {
     const reply = answer("doctor", DOCTOR_TOPICS, question, input.pathname);
-    if (reply.link) return { ...reply, text: `Opening ${reply.link.label}.`, navigate: true };
+    if (reply.link) return { ...reply, text: `Click to go to ${reply.link.label}.` };
   }
   return answer("doctor", DOCTOR_TOPICS, question, input.pathname);
 }

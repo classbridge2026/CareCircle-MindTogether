@@ -114,10 +114,10 @@ export default async function PatientPage() {
             <h2>Quick Actions</h2>
           </header>
           <ul className="pat-actions">
-            <Action href="/patient/find" icon="calendarPlus" label="Book an Appointment" />
-            <Action href="/patient/appointments" icon="calendar" label="View My Appointments" />
-            <Action href="/patient/summaries" icon="notes" label="View Clinical Summaries" />
-            <Action href="/patient/profile" icon="user" label="Manage Profile" />
+            <Action href="/patient/find" icon="calendarPlus" label="Book an Appointment" short="Book" />
+            <Action href="/patient/appointments" icon="calendar" label="View My Appointments" short="Visits" />
+            <Action href="/patient/summaries" icon="notes" label="View Clinical Summaries" short="Records" />
+            <Action href="/patient/profile" icon="user" label="Manage Profile" short="Profile" />
           </ul>
         </article>
       </section>
@@ -158,14 +158,15 @@ function Stat({
   );
 }
 
-function Action({ href, icon, label }: { href: string; icon: PatientHomeIconName; label: string }) {
+function Action({ href, icon, label, short }: { href: string; icon: PatientHomeIconName; label: string; short: string }) {
   return (
     <li>
       <Link className="pat-action" href={href}>
         <span className="pat-action-icon">
           <PatientHomeIcon name={icon} />
         </span>
-        <span>{label}</span>
+        <span className="pat-action-label">{label}</span>
+        <span className="pat-action-short">{short}</span>
         <PatientHomeIcon name="chevron" />
       </Link>
     </li>

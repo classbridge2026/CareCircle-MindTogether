@@ -339,10 +339,50 @@
   flex: 1;
 }
 
+.pat-action-short {
+  display: none;
+}
+
 .pat-action > svg {
   width: 0.65rem;
   height: 0.65rem;
   color: #9aafc2;
+}
+
+@media (max-width: 1023px) {
+  .pat-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .pat-action {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    padding: 0.15rem 0.1rem 0.2rem;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    text-align: center;
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .pat-action-icon {
+    width: 2.85rem;
+    height: 2.85rem;
+    border-radius: 1rem;
+  }
+
+  .pat-action-label,
+  .pat-action > svg {
+    display: none;
+  }
+
+  .pat-action-short {
+    display: block;
+    flex: none;
+  }
 }
 
 @container patpage (min-width: 560px) {

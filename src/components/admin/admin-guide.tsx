@@ -11,7 +11,7 @@ type Message = { id: number; role: "user" | "assistant"; text: string; href?: st
 
 const STARTERS = ["How can I add a doctor?", "What is in the sidebar?", "How does the portal fit together?"];
 
-export function AdminGuide({ superAdmin }: { superAdmin: boolean }) {
+export function AdminGuide({ superAdmin, systemName }: { superAdmin: boolean; systemName: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const place = guidePlace(pathname);
@@ -60,6 +60,12 @@ export function AdminGuide({ superAdmin }: { superAdmin: boolean }) {
     if (!open) return;
     inputRef.current?.focus();
     void loadFacts();
+    const narrow = window.matchMedia("(max-width: 1023px)").matches;
+    const previous = document.body.style.overflow;
+    if (narrow) document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
   }, [open]);
 
   useEffect(() => {
@@ -93,7 +99,6 @@ export function AdminGuide({ superAdmin }: { superAdmin: boolean }) {
         else if (!factsRef.current) void loadFacts();
         const reply = chatWithPortal({ question, pathname, superAdmin, previousTopicId: topicId, facts: factsRef.current });
         setPreviousTopicId(reply.topicId);
-        if (reply.navigate && reply.link) router.push(reply.link.href);
         setTyping(false);
         setMessages((current) => [
           ...current,
@@ -106,7 +111,7 @@ export function AdminGuide({ superAdmin }: { superAdmin: boolean }) {
   const showStarters = messages.length === 1 && !typing;
 
   return (
-    <div className="guide" data-no-busy="">
+    <div className={open ? "guide is-open" : "guide"} data-no-busy="">
       {open ? (
         <section className="guide-panel" role="dialog" aria-modal="false" aria-labelledby={titleId}>
           <header className="guide-head">
@@ -115,7 +120,7 @@ export function AdminGuide({ superAdmin }: { superAdmin: boolean }) {
             </span>
             <span>
               <strong id={titleId}>Assistant</strong>
-              <em>Machine learning · You are on {place}</em>
+              <em>{systemName} · You are on {place}</em>
             </span>
             <button type="button" className="guide-close" onClick={() => setOpen(false)}>
               <AdminIcon name="close" />
@@ -134,11 +139,23 @@ export function AdminGuide({ superAdmin }: { superAdmin: boolean }) {
                   {message.text
                     .split(/\n+/)
                     .filter((line) => line.trim())
+                    .filter((line) => !message.label || line.trim() !== `Click to go to ${message.label}.`)
                     .map((line) => (
                       <p key={line}>{line}</p>
                     ))}
                   {message.href && message.label ? (
-                    <Link href={message.href}>{message.label}</Link>
+                    <Link
+                      href={message.href}
+                      prefetch={false}
+                      onClick={(event) => {
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+                        event.preventDefault();
+                        setOpen(false);
+                        router.push(message.href!);
+                      }}
+                    >
+                      Click to go to {message.label}
+                    </Link>
                   ) : null}
                 </div>
               </div>

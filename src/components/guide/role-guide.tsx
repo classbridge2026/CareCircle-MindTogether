@@ -74,6 +74,12 @@ export function GuidePanel<T>({
     if (!open) return;
     inputRef.current?.focus();
     void loadOwnFacts();
+    const narrow = window.matchMedia("(max-width: 1023px)").matches;
+    const previous = document.body.style.overflow;
+    if (narrow) document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
   }, [open]);
 
   useEffect(() => {
@@ -107,7 +113,6 @@ export function GuidePanel<T>({
         else if (!factsRef.current) void loadOwnFacts();
         const reply = answer({ question, pathname, previousTopicId: topicId, facts: factsRef.current });
         setPreviousTopicId(reply.topicId);
-        if (reply.navigate && reply.link) router.push(reply.link.href);
         setTyping(false);
         setMessages((current) => [
           ...current,
@@ -120,7 +125,7 @@ export function GuidePanel<T>({
   const showStarters = messages.length === 1 && !typing;
 
   return (
-    <div className="guide" data-no-busy="">
+    <div className={open ? "guide is-open" : "guide"} data-no-busy="">
       {open ? (
         <section className="guide-panel" role="dialog" aria-modal="false" aria-labelledby={titleId}>
           <header className="guide-head">
@@ -150,10 +155,24 @@ export function GuidePanel<T>({
                   {message.text
                     .split(/\n+/)
                     .filter((line) => line.trim())
+                    .filter((line) => !message.label || line.trim() !== `Click to go to ${message.label}.`)
                     .map((line) => (
                       <p key={line}>{line}</p>
                     ))}
-                  {message.href && message.label ? <Link href={message.href}>{message.label}</Link> : null}
+                  {message.href && message.label ? (
+                    <Link
+                      href={message.href}
+                      prefetch={false}
+                      onClick={(event) => {
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+                        event.preventDefault();
+                        setOpen(false);
+                        router.push(message.href!);
+                      }}
+                    >
+                      Click to go to {message.label}
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             ))}

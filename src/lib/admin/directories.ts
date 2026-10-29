@@ -59,6 +59,7 @@ export async function loadUsers(db: PrismaClient, filters: { q?: string; status?
         { phoneE164: { contains: q, mode: "insensitive" } },
         { patientProfile: { is: { fullName: { contains: q, mode: "insensitive" } } } },
         { doctorProfile: { is: { fullName: { contains: q, mode: "insensitive" } } } },
+        ...(isUuid(q) ? [{ id: q }] : []),
       ],
     });
   }

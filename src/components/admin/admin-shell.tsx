@@ -9,6 +9,7 @@ import { NotificationBell, type BellItem } from "@/components/notifications/bell
 import { ProfilePhoto } from "@/components/profile-photo";
 import { signOutAction } from "@/app/admin/account-actions";
 import { AdminGuide } from "./admin-guide";
+import { AdminNoticesContext } from "./admin-notices";
 import { AdminIcon, type AdminIconName } from "./admin-icons";
 
 type Item = { href: string; label: string; icon: AdminIconName; exact?: boolean };
@@ -102,6 +103,13 @@ function currentTitle(pathname: string) {
   return ordered.find((item) => matches(pathname, item.href, item.exact))?.title ?? "Administration";
 }
 
+const mobileTabs: Array<{ href: string; label: string; icon: AdminIconName; exact?: boolean }> = [
+  { href: "/admin", label: "Home", icon: "gauge", exact: true },
+  { href: "/admin/users", label: "Users", icon: "users" },
+  { href: "/admin/appointments", label: "Visits", icon: "calendar" },
+  { href: "/admin/payments", label: "Payments", icon: "payment" },
+];
+
 const searchRoutes = [
   "/admin/doctors/pending",
   "/admin/doctors",
@@ -149,10 +157,14 @@ export function AdminShell({
   const [wide, setWide] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const pageThumbRef = useRef<HTMLDivElement>(null);
+  const sideScrollRef = useRef<HTMLElement>(null);
+  const sideThumbRef = useRef<HTMLDivElement>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const open = openPath === pathname;
   const accountOpen = accountPath === pathname;
   const title = currentTitle(pathname);
+  const tabCurrent = mobileTabs.some((tab) => matches(pathname, tab.href, tab.exact));
 
   useEffect(() => {
     setSearchOpen(false);
@@ -185,6 +197,65 @@ export function AdminShell({
     };
   }, []);
 
+  useEffect(() => {
+    const pageThumb = pageThumbRef.current;
+    const side = sideScrollRef.current;
+    const sideThumb = sideThumbRef.current;
+    if (!pageThumb || !side || !sideThumb) return;
+    const root = document.documentElement;
+    const media = window.matchMedia("(max-width: 1023px)");
+    let pageTimer = 0;
+    let sideTimer = 0;
+
+    function place(scroller: HTMLElement, thumb: HTMLDivElement, top: number) {
+      const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+      if (!media.matches || maxScroll <= 1) {
+        thumb.classList.remove("is-visible");
+        return;
+      }
+      const height = Math.max(36, (scroller.clientHeight / scroller.scrollHeight) * scroller.clientHeight);
+      const offset = (top / maxScroll) * (scroller.clientHeight - height);
+      thumb.style.height = `${height}px`;
+      thumb.style.transform = `translateY(${offset}px)`;
+      thumb.classList.add("is-visible");
+    }
+
+    function onPageScroll() {
+      place(root, pageThumb!, window.scrollY);
+      window.clearTimeout(pageTimer);
+      pageTimer = window.setTimeout(() => pageThumb?.classList.remove("is-visible"), 700);
+    }
+
+    function onSideScroll() {
+      place(side!, sideThumb!, side!.scrollTop);
+      window.clearTimeout(sideTimer);
+      sideTimer = window.setTimeout(() => sideThumb?.classList.remove("is-visible"), 700);
+    }
+
+    function apply() {
+      root.classList.toggle("admin-mobile-scroll", media.matches);
+      if (!media.matches) {
+        pageThumb?.classList.remove("is-visible");
+        sideThumb?.classList.remove("is-visible");
+      }
+    }
+
+    apply();
+    window.addEventListener("scroll", onPageScroll, { passive: true });
+    side.addEventListener("scroll", onSideScroll, { passive: true });
+    media.addEventListener("change", apply);
+    return () => {
+      window.removeEventListener("scroll", onPageScroll);
+      side.removeEventListener("scroll", onSideScroll);
+      media.removeEventListener("change", apply);
+      window.clearTimeout(pageTimer);
+      window.clearTimeout(sideTimer);
+      root.classList.remove("admin-mobile-scroll");
+      pageThumb.classList.remove("is-visible");
+      sideThumb.classList.remove("is-visible");
+    };
+  }, []);
+
   function toggleNavigation() {
     if (window.matchMedia("(min-width: 1024px)").matches) {
       setCollapsed((value) => !value);
@@ -194,12 +265,13 @@ export function AdminShell({
   }
 
   return (
+    <AdminNoticesContext.Provider value={{ unread: unreadNotifications ?? 0, notices }}>
     <div className="admin-app">
       <header className="admin-navbar">
         <div className="admin-navbar-start">
           <button
             type="button"
-            className="admin-icon-btn"
+            className="admin-icon-btn admin-nav-toggle"
             aria-expanded={wide ? !collapsed : open}
             aria-controls="admin-navigation"
             onClick={toggleNavigation}
@@ -304,7 +376,7 @@ export function AdminShell({
       ) : null}
       <div className="admin-frame">
         <aside id="admin-navigation" data-no-busy="" className={`admin-sidebar${open ? " is-open" : ""}${collapsed ? " is-collapsed" : ""}`} aria-label="Administration">
-          <nav className="admin-sidebar-scroll">
+          <nav ref={sideScrollRef} className="admin-sidebar-scroll">
             {groups.map((group) => (
               <div key={group.label} className="admin-nav-group">
                 <p className="admin-nav-label">{group.label}</p>
@@ -331,10 +403,28 @@ export function AdminShell({
               </div>
             ))}
           </nav>
+          <div ref={sideThumbRef} className="admin-scroll-thumb admin-side-thumb" aria-hidden="true" />
         </aside>
         <div className="admin-content">{children}</div>
       </div>
-      <AdminGuide superAdmin={roleLabel === "Super administrator"} />
+      <nav className="admin-tabbar" aria-label="Administration">
+        {mobileTabs.map((tab) => {
+          const current = matches(pathname, tab.href, tab.exact);
+          return (
+            <Link key={tab.href} href={tab.href} prefetch={false} aria-current={current ? "page" : undefined} onClick={() => setOpenPath(null)}>
+              <AdminIcon name={tab.icon} />
+              <span>{tab.label}</span>
+            </Link>
+          );
+        })}
+        <button type="button" className={!tabCurrent || open ? "is-current" : undefined} aria-expanded={open} aria-controls="admin-navigation" onClick={toggleNavigation}>
+          <AdminIcon name={open ? "close" : "menu"} />
+          <span>More</span>
+        </button>
+      </nav>
+      <div ref={pageThumbRef} className="admin-scroll-thumb admin-page-thumb" aria-hidden="true" />
+      <AdminGuide superAdmin={roleLabel === "Super administrator"} systemName={systemName} />
     </div>
+    </AdminNoticesContext.Provider>
   );
 }

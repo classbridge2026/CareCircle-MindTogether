@@ -309,3 +309,76 @@
     animation: none;
   }
 }
+
+@media (max-width: 1023px) {
+  .guide.is-open {
+    top: 0;
+    right: 0;
+    bottom: calc(4.15rem + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    z-index: 80;
+    max-width: none;
+    gap: 0;
+  }
+
+  .guide.is-open .guide-launch {
+    display: none;
+  }
+
+  .guide.is-open .guide-panel {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .guide.is-open .guide-head {
+    align-items: flex-start;
+    min-height: calc(3.6rem + env(safe-area-inset-top, 0px));
+    padding: calc(0.7rem + env(safe-area-inset-top, 0px)) 0.7rem 0.75rem;
+  }
+
+  .guide.is-open .guide-head > span {
+    min-width: 0;
+  }
+
+  .guide.is-open .guide-head em {
+    white-space: normal;
+  }
+
+  .guide.is-open .guide-close {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .guide.is-open .guide-thread {
+    flex: 1;
+  }
+
+  .guide.is-open .guide-prompts button {
+    min-height: 2.75rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .guide.is-open .guide-form {
+    padding-bottom: 0.75rem;
+  }
+
+  .guide.is-open .guide-form textarea {
+    min-height: 2.75rem;
+  }
+
+  .guide.is-open .guide-form button {
+    height: 2.75rem;
+    padding: 0 1rem;
+  }
+
+  .guide.is-open .guide-bubble a {
+    min-height: 2.75rem;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+}

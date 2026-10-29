@@ -47,7 +47,7 @@ export default async function DoctorPatientsPage({
           <p className="mt-6 text-sm leading-6 text-[#5b6b7c]">{q ? "No assigned patient matches that search." : "Patients appear here after an appointment is assigned to you."}</p>
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="phone-table w-full min-w-[720px] text-left text-sm">
               <thead className="text-xs tracking-wide text-[#5b6b7c] uppercase">
                 <tr>
                   <th className="px-2 py-2 font-medium">Patient</th>
@@ -60,16 +60,16 @@ export default async function DoctorPatientsPage({
               <tbody>
                 {result.patients.map((patient) => (
                   <tr key={patient.id} className="border-t border-[#e6eef5]">
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-3" data-label="Patient">
                       <Link className="flex items-center gap-3 font-semibold text-[#0C2B45]" href={`/doctor/patients/${patient.id}`}>
                         <ProfilePhoto userId={patient.userId} name={patient.fullName} version={patient.imageVersion} size={36} alt="" />
                         {patient.fullName}
                       </Link>
                     </td>
-                    <td className="px-2 py-3 text-[#5b6b7c]">{patient.line}</td>
-                    <td className="px-2 py-3">{patient.lastVisit ?? "—"}</td>
-                    <td className="px-2 py-3">{patient.nextVisit ?? "—"}</td>
-                    <td className="px-2 py-3"><StatusBadge tone={patient.status === "Active" ? "teal" : "slate"}>{patient.status}</StatusBadge></td>
+                    <td className="px-2 py-3 text-[#5b6b7c]" data-label="Details">{patient.line}</td>
+                    <td className="px-2 py-3" data-label="Last visit">{patient.lastVisit ?? "—"}</td>
+                    <td className="px-2 py-3" data-label="Next visit">{patient.nextVisit ?? "—"}</td>
+                    <td className="px-2 py-3" data-label="Status"><StatusBadge tone={patient.status === "Active" ? "teal" : "slate"}>{patient.status}</StatusBadge></td>
                   </tr>
                 ))}
               </tbody>

@@ -30,7 +30,7 @@ export default async function DoctorScreeningPage() {
         <p className="rounded-2xl border border-[#d7e3ee] bg-white p-5 text-sm text-[#5b6b7c]">No submitted assessment is available for your patients.</p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-[#d7e3ee] bg-white">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="phone-table w-full min-w-[760px] text-left text-sm">
             <thead className="text-xs tracking-wide text-[#5b6b7c] uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Patient</th>
@@ -44,17 +44,17 @@ export default async function DoctorScreeningPage() {
             <tbody>
               {result.rows.map((row) => (
                 <tr key={row.id} className="border-t border-[#e6eef5]">
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label="Patient">
                     <span className="flex items-center gap-2 font-semibold text-[#0C2B45]">
                       <ProfilePhoto userId={row.patient.userId} name={row.patient.fullName} version={row.patient.user.profileImageUpdatedAt?.toISOString() ?? null} size={32} alt="" />
                       {row.patient.fullName}
                     </span>
                   </td>
-                  <td className="px-4 py-3">{row.version.tool.abbreviation}</td>
-                  <td className="px-4 py-3">{row.submittedAt ? formatPlatformWhen(row.submittedAt) : "—"}</td>
-                  <td className="px-4 py-3">{row.result ? `${row.result.score}/${row.result.maxScore} · ${row.result.band}` : "—"}</td>
-                  <td className="px-4 py-3">{row.reviews.length > 0 ? "Reviewed" : "Pending"}</td>
-                  <td className="px-4 py-3"><Link className="font-semibold text-[#0F766E]" href={`/doctor/screening/${row.id}`}>View</Link></td>
+                  <td className="px-4 py-3" data-label="Screening">{row.version.tool.abbreviation}</td>
+                  <td className="px-4 py-3" data-label="Completed">{row.submittedAt ? formatPlatformWhen(row.submittedAt) : "—"}</td>
+                  <td className="px-4 py-3" data-label="Score">{row.result ? `${row.result.score}/${row.result.maxScore} · ${row.result.band}` : "—"}</td>
+                  <td className="px-4 py-3" data-label="Review">{row.reviews.length > 0 ? "Reviewed" : "Pending"}</td>
+                  <td className="px-4 py-3" data-label="Actions"><Link className="font-semibold text-[#0F766E]" href={`/doctor/screening/${row.id}`}>View</Link></td>
                 </tr>
               ))}
             </tbody>

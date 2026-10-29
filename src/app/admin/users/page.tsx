@@ -48,6 +48,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   });
   return (
     <main className="users-page">
+      <div className="users-desk">
       <LiveQueryForm
         pathname="/admin/users"
         className="users-filters"
@@ -58,19 +59,25 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
             { value: "ACTIVE", label: "Active" },
             { value: "SUSPENDED", label: "Suspended" },
             { value: "PENDING_VERIFICATION", label: "Pending verification" },
-            { value: "DISABLED", label: "Disabled" },
           ] },
           { name: "role", label: "Role", kind: "select", value: role || "ALL", labelClassName: "text-sm font-medium", inputClassName: `${textInputClass} mt-1`, options: [
             { value: "ALL", label: "All roles" },
             { value: "PATIENT", label: "Patient" },
             { value: "DOCTOR", label: "Doctor" },
             { value: "ADMIN", label: "Administrator" },
-            { value: "SUPER_ADMIN", label: "Super administrator" },
           ] },
         ]}
       />
-      <UsersBoard rows={rows} canCreateElevated={superAdmin} initialViewId={initialViewId} />
-      <CatalogPager page={result.page} pageSize={result.pageSize} total={result.total} query={query} label="account" />
+      </div>
+      <UsersBoard
+        rows={rows}
+        canCreateElevated={superAdmin}
+        initialViewId={initialViewId}
+        list={{ q, status, role, page: result.page, pageSize: result.pageSize, total: result.total, query }}
+      />
+      <div className="users-desk">
+        <CatalogPager page={result.page} pageSize={result.pageSize} total={result.total} query={query} label="account" />
+      </div>
     </main>
   );
 }

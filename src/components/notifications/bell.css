@@ -175,3 +175,198 @@
   text-align: center;
   text-decoration: none;
 }
+
+@media (max-width: 1023px) {
+  .bell-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .bell-panel.is-sheet {
+    top: 0;
+    right: 0;
+    bottom: calc(4.15rem + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    max-height: none;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #f3f8fc;
+  }
+
+  .bell-screen-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    min-height: calc(3.5rem + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 0.35rem 0 0.1rem;
+    border-bottom: 1px solid #e6eef5;
+    background: #fff;
+  }
+
+  .bell-screen-back {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 0;
+    border-radius: 0.8rem;
+    background: transparent;
+    color: #0c2b45;
+    cursor: pointer;
+  }
+
+  .bell-screen-bar > div {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .bell-screen-bar h2 {
+    margin: 0;
+    color: #0c2b45;
+    font-size: 1.12rem;
+    font-weight: 800;
+  }
+
+  .bell-screen-bar p {
+    margin: 0;
+    color: #6b7c93;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .bell-screen-mark {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0 0.55rem;
+    border: 0;
+    background: transparent;
+    color: #0f766e;
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .bell-screen-empty {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
+  }
+
+  .bell-screen-empty svg {
+    width: 1.8rem;
+    height: 1.8rem;
+    margin-bottom: 0.35rem;
+    color: #8aa0b5;
+  }
+
+  .bell-screen-empty p {
+    margin: 0;
+    color: #0c2b45;
+    font-size: 1.02rem;
+    font-weight: 800;
+  }
+
+  .bell-screen-empty span {
+    color: #6b7c93;
+    font-size: 0.88rem;
+  }
+
+  .bell-panel.is-sheet .bell-screen-list {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    margin: 0.7rem 0.7rem 0;
+    padding: 0;
+    border-radius: 1rem;
+    background: #fff;
+  }
+
+  .bell-screen-open {
+    display: grid;
+    grid-template-columns: 0.5rem minmax(0, 1fr) auto;
+    gap: 0.2rem 0.7rem;
+    width: 100%;
+    min-height: 4.4rem;
+    padding: 0.9rem 0.9rem;
+    border: 0;
+    border-bottom: 1px solid #eef3f8;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .bell-screen-list li:last-child .bell-screen-open {
+    border-bottom: 0;
+  }
+
+  .bell-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-top: 0.4rem;
+    border-radius: 999px;
+    background: #0f766e;
+  }
+
+  .bell-screen-copy {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .bell-screen-copy strong {
+    color: #0c2b45;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  .bell-screen-copy span,
+  .bell-screen-open time {
+    color: #6b7c93;
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+
+  .bell-screen-copy span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .bell-screen-open time {
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .bell-panel.is-sheet .bell-more,
+  .bell-panel.is-sheet .bell-all {
+    flex: none;
+    background: #f3f8fc;
+  }
+
+  .bell-panel.is-sheet .bell-all {
+    min-height: 3rem;
+  }
+
+  .notify-tap {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+}

@@ -2,7 +2,11 @@
 
 import { useActionState, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { updateAccountStatusAction } from "@/app/admin/access/actions";
 import { AdminIcon } from "@/components/admin/admin-icons";
+import { catalogQuery } from "@/components/admin/catalog-ui";
+import { LiveSearchInput } from "@/components/live-query";
 import { StatusBadge } from "@/components/status-badge";
 import type { AdminActionState } from "@/lib/admin/action-state";
 import type { BadgeTone } from "@/lib/admin/labels";
@@ -50,6 +54,56 @@ const statuses = [
   { value: "DISABLED", label: "Disabled" },
 ];
 
+export type UserListQuery = {
+  q: string;
+  status: string;
+  role: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  query: string;
+};
+
+const statusChips = [
+  { value: "", label: "All Users" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "PENDING_VERIFICATION", label: "Pending Verif." },
+  { value: "SUSPENDED", label: "Suspended" },
+] as const;
+
+const roleChips = [
+  { value: "PATIENT", label: "Patient" },
+  { value: "DOCTOR", label: "Doctor" },
+  { value: "ADMIN", label: "Administrator" },
+] as const;
+
+function compactCount(total: number) {
+  if (total < 1000) return String(total);
+  const thousands = total / 1000;
+  const rounded = thousands >= 10 ? Math.round(thousands).toString() : thousands.toFixed(1).replace(/\.0$/, "");
+  return `${rounded}k`;
+}
+
+function listHref(q: string, status: string, role: string) {
+  return catalogQuery("/admin/users", { q, status, role });
+}
+
+function pageHref(query: string, page: number) {
+  return `${query}${query.includes("?") ? "&" : "?"}page=${page}`;
+}
+
+function csvCell(value: string) {
+  return /[",\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+}
+
+function shortStatus(status: string) {
+  if (status === "PENDING_VERIFICATION") return "Pending";
+  if (status === "ACTIVE") return "Active";
+  if (status === "SUSPENDED") return "Suspended";
+  if (status === "DISABLED") return "Disabled";
+  return status;
+}
+
 type Mode = { kind: "create" } | { kind: "view"; userId: string } | { kind: "edit"; user: UserRow } | { kind: "delete"; user: UserRow } | null;
 
 function rememberView(userId: string | null) {
@@ -64,12 +118,27 @@ export function UsersBoard({
   rows,
   canCreateElevated,
   initialViewId = null,
+  list,
 }: {
   rows: UserRow[];
   canCreateElevated: boolean;
   initialViewId?: string | null;
+  list: UserListQuery;
 }) {
+  const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialViewId ? { kind: "view", userId: initialViewId } : null);
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [suspendOpen, setSuspendOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [suspendNote, setSuspendNote] = useState<string | null>(null);
+  const [suspending, setSuspending] = useState(false);
+  const rowKey = rows.map((user) => user.id).join(",");
+
+  useEffect(() => {
+    setSelected(new Set());
+    setMenuId(null);
+  }, [rowKey]);
 
   function openView(userId: string) {
     setMode({ kind: "view", userId });
@@ -80,8 +149,182 @@ export function UsersBoard({
     setMode(null);
     rememberView(null);
   }
+
+  const manageable = rows.filter((user) => user.canManage);
+  const allPicked = manageable.length > 0 && manageable.every((user) => selected.has(user.id));
+  const somePicked = manageable.some((user) => selected.has(user.id));
+  const chosen = rows.filter((user) => selected.has(user.id));
+  const suspendable = chosen.filter((user) => user.canManage && user.status === "ACTIVE");
+  const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
+  const activeStatus = list.status || "";
+  const activeRole = list.role || "";
+
+  function toggleAll() {
+    setSelected(allPicked ? new Set() : new Set(manageable.map((user) => user.id)));
+  }
+
+  function toggleOne(id: string) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exportAccounts() {
+    const source = chosen.length > 0 ? chosen : rows;
+    const header = ["Name", "Email", "Phone", "Role", "Status"];
+    const body = source.map((user) => [user.name ?? "", user.email, user.phone ?? "", user.roleLabel, user.statusLabel].map(csvCell).join(","));
+    const file = new Blob([[header.join(","), ...body].join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "users.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function confirmSuspend() {
+    const cleaned = reason.trim();
+    if (cleaned.length < 10 || cleaned.length > 500) {
+      setSuspendNote("Enter an operational reason between 10 and 500 characters.");
+      return;
+    }
+    setSuspending(true);
+    setSuspendNote(null);
+    for (const user of suspendable) {
+      const formData = new FormData();
+      formData.set("userId", user.id);
+      formData.set("change", "suspend");
+      formData.set("reason", cleaned);
+      const result = await updateAccountStatusAction({}, formData);
+      if (result.tone === "error") {
+        setSuspendNote(result.message ?? "Could not suspend that account.");
+        setSuspending(false);
+        return;
+      }
+    }
+    setSuspending(false);
+    setSuspendOpen(false);
+    setReason("");
+    setSelected(new Set());
+    router.refresh();
+  }
+
   return (
-    <section className="users-card">
+    <>
+      <section className="users-app" aria-label="User management">
+        <div className="users-app-search">
+          <AdminIcon name="search" />
+          <LiveSearchInput destination="/admin/users" initial={list.q} placeholder="Search by name, email or ID..." className="users-app-search-input" />
+        </div>
+        <div className="users-app-chips" role="navigation" aria-label="Filters">
+          {statusChips.map((chip) => {
+            const current = chip.value === "" ? activeStatus === "" && activeRole === "" : activeStatus === chip.value;
+            const count = current ? ` (${compactCount(list.total)})` : "";
+            return (
+              <Link key={chip.value || "all"} href={listHref(list.q, chip.value, chip.value === "" ? "" : list.role)} className={current ? "users-app-chip is-current" : "users-app-chip"} aria-current={current ? "page" : undefined}>
+                {`${chip.label}${count}`}
+              </Link>
+            );
+          })}
+          {roleChips.map((chip) => {
+            const current = activeRole === chip.value;
+            return (
+              <Link key={`role-${chip.value}`} href={listHref(list.q, list.status, chip.value)} className={current ? "users-app-chip is-current" : "users-app-chip"} aria-current={current ? "page" : undefined}>
+                {chip.label}
+              </Link>
+            );
+          })}
+        </div>
+        <div className="users-app-tools">
+          <label className="users-app-select">
+            <input type="checkbox" checked={allPicked} ref={(node) => { if (node) node.indeterminate = somePicked && !allPicked; }} disabled={manageable.length === 0} onChange={toggleAll} />
+            Select all
+          </label>
+          <button type="button" className="users-app-tool" onClick={() => setMode({ kind: "create" })}>
+            Add
+          </button>
+          <button type="button" className="users-app-tool" onClick={exportAccounts} disabled={rows.length === 0}>
+            Export
+          </button>
+          <button
+            type="button"
+            className="users-app-tool"
+            onClick={() => {
+              setSuspendNote(null);
+              if (suspendable.length === 0) {
+                setSuspendNote("Select active accounts to suspend.");
+                return;
+              }
+              setSuspendOpen(true);
+            }}
+          >
+            Suspend
+          </button>
+        </div>
+        {suspendNote && !suspendOpen ? <p className="users-app-note" role="status">{suspendNote}</p> : null}
+        {rows.length === 0 ? (
+          <p className="users-empty">No accounts match these filters.</p>
+        ) : (
+          <ul className="users-app-list">
+            {rows.map((user) => {
+              const title = user.name ?? user.email;
+              const menuOpen = menuId === user.id;
+              return (
+                <li key={user.id} className="users-app-card">
+                  <input type="checkbox" aria-label={`Select ${title}`} checked={selected.has(user.id)} disabled={!user.canManage} onChange={() => toggleOne(user.id)} />
+                  <UserAvatar userId={user.id} name={title} imageVersion={user.imageVersion} size={44} />
+                  <button type="button" className="users-app-person" onClick={() => openView(user.id)}>
+                    <span className="users-app-name">{title}</span>
+                    {user.name ? <span className="users-app-mail">{user.email}</span> : null}
+                  </button>
+                  <span className="users-app-meta">
+                    <span className={`users-app-badge is-${user.statusTone}`}>{shortStatus(user.status)}</span>
+                    <span className="users-app-role">{user.roleLabel}</span>
+                  </span>
+                  <div className="users-app-menu">
+                    <button type="button" className="users-app-more-btn" aria-label={`Actions for ${title}`} aria-expanded={menuOpen} onClick={() => setMenuId(menuOpen ? null : user.id)}>
+                      <AdminIcon name="ellipsis" />
+                    </button>
+                    {menuOpen ? (
+                      <div className="users-app-pop" role="menu">
+                        <button type="button" role="menuitem" onClick={() => { setMenuId(null); openView(user.id); }}>
+                          View
+                        </button>
+                        {user.canManage ? (
+                          <>
+                            <button type="button" role="menuitem" onClick={() => { setMenuId(null); setMode({ kind: "edit", user }); }}>
+                              Edit
+                            </button>
+                            <button type="button" role="menuitem" className="is-danger" onClick={() => { setMenuId(null); setMode({ kind: "delete", user }); }}>
+                              Delete
+                            </button>
+                          </>
+                        ) : (
+                          <p>{user.lockLabel}</p>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {list.page > 1 ? (
+          <Link className="users-app-load" href={pageHref(list.query, list.page - 1)}>
+            Previous users
+          </Link>
+        ) : null}
+        {list.page < pages ? (
+          <Link className="users-app-load" href={pageHref(list.query, list.page + 1)}>
+            Load more users
+          </Link>
+        ) : null}
+      </section>
+      <section className="users-card users-desk">
       <header className="users-card-head">
         <h2>Accounts</h2>
         <button type="button" className="users-add" onClick={() => setMode({ kind: "create" })}>
@@ -166,6 +409,7 @@ export function UsersBoard({
           </table>
         </div>
       )}
+    </section>
       {mode?.kind === "create" ? <CreateDialog canCreateElevated={canCreateElevated} onClose={closeMode} /> : null}
       {mode?.kind === "view" ? (
         <ViewDialog
@@ -176,7 +420,35 @@ export function UsersBoard({
       ) : null}
       {mode?.kind === "edit" ? <EditDialog user={mode.user} onClose={closeMode} /> : null}
       {mode?.kind === "delete" ? <DeleteDialog user={mode.user} onClose={closeMode} /> : null}
-    </section>
+      {suspendOpen ? (
+        <Modal title="Suspend accounts" onClose={() => { if (!suspending) setSuspendOpen(false); }}>
+          <form
+            className="user-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void confirmSuspend();
+            }}
+          >
+            <p className="user-form-note">
+              Suspend {suspendable.length} active account{suspendable.length === 1 ? "" : "s"}? Sign-in stops and open sessions end. Profiles, appointments, and payment history stay in place.
+            </p>
+            <label>
+              Operational reason
+              <textarea value={reason} required minLength={10} maxLength={500} onChange={(event) => setReason(event.target.value)} />
+            </label>
+            {suspendNote ? <p className="user-form-error" role="alert">{suspendNote}</p> : null}
+            <div className="user-form-actions">
+              <button type="button" className="users-cancel" disabled={suspending} onClick={() => setSuspendOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="users-delete" disabled={suspending}>
+                {suspending ? "Suspending…" : "Suspend"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
+    </>
   );
 }
 

@@ -104,8 +104,17 @@ export function DoctorShell({
     };
   }, []);
 
+  const tabOrder = ["/doctor", "/doctor/appointments", "/doctor/patients", "/doctor/notes", "/doctor/profile"] as const;
+  const tabLabel: Record<(typeof tabOrder)[number], string> = {
+    "/doctor": "Home",
+    "/doctor/appointments": "Schedule",
+    "/doctor/patients": "Patients",
+    "/doctor/notes": "Tasks",
+    "/doctor/profile": "Profile",
+  };
+
   return (
-    <div className="fixed inset-0 flex overflow-hidden bg-[#F3F8FC] text-[#10233c]">
+    <div className="doctor-app fixed inset-0 flex overflow-hidden bg-[#F3F8FC] text-[#10233c]">
       {open ? (
         <button aria-label="Close navigation" className="fixed inset-0 z-30 bg-[#0C2B45]/40 lg:hidden" type="button" onClick={() => setOpenPath(null)} />
       ) : null}
@@ -153,16 +162,6 @@ export function DoctorShell({
       </aside>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="portal-navbar">
-          <button
-            type="button"
-            className="portal-nav-toggle"
-            aria-expanded={open}
-            aria-controls="doctor-navigation"
-            onClick={() => setOpenPath(open ? null : pathname)}
-          >
-            <FontAwesomeIcon icon={open ? faXmark : faBars} aria-hidden="true" />
-            <span className="sr-only">{open ? "Close navigation" : "Open navigation"}</span>
-          </button>
           <form className="portal-search" role="search" onSubmit={(event) => event.preventDefault()}>
             <FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" />
             <label className="sr-only" htmlFor="doctor-search">
@@ -220,9 +219,28 @@ export function DoctorShell({
             </div>
           </div>
         </header>
-        <div className={`min-h-0 w-full min-w-0 flex-1 ${room ? "flex flex-col overflow-hidden" : "overflow-y-auto"}`}>
+        <div className={`min-h-0 w-full min-w-0 flex-1 ${room ? "flex flex-col overflow-hidden" : "doctor-scroll overflow-y-auto"}`}>
           <main className={room ? "flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden" : "w-full min-w-0 px-4 py-6 lg:px-8 lg:py-7"}>{children}</main>
         </div>
+        {room || open ? null : (
+          <nav className="patient-tabbar" aria-label="Doctor">
+            {tabOrder.map((href) => {
+              const link = links.find((item) => item.href === href);
+              if (!link) return null;
+              const current = href === active;
+              return (
+                <Link key={href} href={href} prefetch={false} aria-current={current ? "page" : undefined}>
+                  <FontAwesomeIcon icon={link.icon} aria-hidden="true" />
+                  <span>{tabLabel[href]}</span>
+                </Link>
+              );
+            })}
+            <button type="button" className={open ? "is-current" : undefined} aria-expanded={open} aria-controls="doctor-navigation" onClick={() => setOpenPath(open ? null : pathname)}>
+              <FontAwesomeIcon icon={open ? faXmark : faBars} aria-hidden="true" />
+              <span>More</span>
+            </button>
+          </nav>
+        )}
         <DoctorGuide />
       </div>
     </div>

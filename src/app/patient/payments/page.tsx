@@ -60,7 +60,7 @@ export default async function PatientPaymentsPage({ searchParams }: { searchPara
         <p className="rounded-2xl border border-[#d7e3ee] bg-white p-5 text-sm text-[#5b6b7c]">No payment records match this view.</p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-[#d7e3ee] bg-white">
-          <table className="w-full min-w-[720px] text-left text-sm">
+          <table className="phone-table w-full min-w-[720px] text-left text-sm">
             <thead className="text-xs tracking-wide text-[#5b6b7c] uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Date</th>
@@ -72,10 +72,10 @@ export default async function PatientPaymentsPage({ searchParams }: { searchPara
             <tbody>
               {rows.map((payment) => (
                 <tr key={payment.id} className="border-t border-[#e6eef5]">
-                  <td className="px-4 py-3">{payment.when}</td>
-                  <td className="px-4 py-3">{payment.service}<div className="text-xs text-[#5b6b7c]">{payment.doctor}</div></td>
-                  <td className="px-4 py-3">{payment.amount}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label="Date">{payment.when}</td>
+                  <td className="px-4 py-3" data-label="Description">{payment.service}<div className="text-xs text-[#5b6b7c]">{payment.doctor}</div></td>
+                  <td className="px-4 py-3" data-label="Amount">{payment.amount}</td>
+                  <td className="px-4 py-3" data-label="Status">
                     <StatusBadge tone={paymentStatusTone(payment.status)}>{paymentStatusLabel(payment.status)}</StatusBadge>
                     <Link className="ml-3 font-semibold text-[#0F766E]" href={`/patient/appointments/${payment.appointmentId}`}>View</Link>
                   </td>

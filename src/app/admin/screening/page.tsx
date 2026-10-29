@@ -87,7 +87,7 @@ export default async function AdminScreeningPage() {
       ) : (
         <div className="overflow-hidden rounded-2xl border border-brand-line bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] border-separate border-spacing-0 text-left text-sm">
+            <table className="phone-table w-full min-w-[820px] border-separate border-spacing-0 text-left text-sm">
               <thead>
                 <tr>
                   {["Name", "Category", "Version", "Approval", "License", "Status", "Actions"].map((heading) => (
@@ -98,13 +98,13 @@ export default async function AdminScreeningPage() {
               <tbody>
                 {SCREENING_CANDIDATES.map((tool) => (
                   <tr key={tool.code} className="hover:bg-[#f3f8fc]">
-                    <td className={`${bodyCell} border-t border-brand-line font-semibold text-brand-navy`}>{tool.title}<div className="font-normal text-brand-muted">{tool.abbreviation}</div></td>
-                    <td className={`${bodyCell} border-t border-brand-line`}>{label(tool.category)}</td>
-                    <td className={`${bodyCell} border-t border-brand-line`}>—</td>
-                    <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass("PENDING_CLINICAL_REVIEW")}`}>pending clinical review</span></td>
-                    <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass("NOT_REVIEWED")}`}>not reviewed</span></td>
-                    <td className={`${bodyCell} border-t border-brand-line`}><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass("INACTIVE")}`}>inactive</span></td>
-                    <td className={`${bodyCell} border-t border-brand-line text-brand-muted`}>Unavailable</td>
+                    <td className={`${bodyCell} border-t border-brand-line font-semibold text-brand-navy`} data-label="Name">{tool.title}<div className="font-normal text-brand-muted">{tool.abbreviation}</div></td>
+                    <td className={`${bodyCell} border-t border-brand-line`} data-label="Category">{label(tool.category)}</td>
+                    <td className={`${bodyCell} border-t border-brand-line`} data-label="Version">—</td>
+                    <td className={`${bodyCell} border-t border-brand-line`} data-label="Approval"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass("PENDING_CLINICAL_REVIEW")}`}>pending clinical review</span></td>
+                    <td className={`${bodyCell} border-t border-brand-line`} data-label="License"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass("NOT_REVIEWED")}`}>not reviewed</span></td>
+                    <td className={`${bodyCell} border-t border-brand-line`} data-label="Status"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${chipClass("INACTIVE")}`}>inactive</span></td>
+                    <td className={`${bodyCell} border-t border-brand-line text-brand-muted`} data-label="Actions">Unavailable</td>
                   </tr>
                 ))}
               </tbody>

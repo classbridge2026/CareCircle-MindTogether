@@ -22,7 +22,7 @@ export function MarkReadForm({ notificationId }: { notificationId: string }) {
   return (
     <form action={action}>
       <input name="notificationId" type="hidden" value={notificationId} />
-      <button className="text-sm font-semibold text-[#0F766E]" disabled={pending} type="submit">{pending ? "Saving…" : "Mark read"}</button>
+      <button className="notify-tap text-sm font-semibold text-[#0F766E]" disabled={pending} type="submit">{pending ? "Saving…" : "Mark read"}</button>
       {state.message ? <p className="sr-only" role={state.tone === "error" ? "alert" : "status"}>{state.message}</p> : null}
     </form>
   );
