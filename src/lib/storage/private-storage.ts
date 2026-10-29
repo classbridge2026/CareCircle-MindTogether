@@ -70,8 +70,9 @@ function filesystemStorage(root: string): PrivateObjectStorage {
         return { ok: false, reason: "provider_failed" };
       }
       try {
-        await mkdir(path.dirname(full), { recursive: true });
-        await writeFile(full, body, { mode: 0o600 });
+        const directory = path.dirname(full);
+        await mkdir(/* turbopackIgnore: true */ directory, { recursive: true });
+        await writeFile(/* turbopackIgnore: true */ full, body, { mode: 0o600 });
         return { ok: true };
       } catch {
         return { ok: false, reason: "provider_failed" };
@@ -83,7 +84,7 @@ function filesystemStorage(root: string): PrivateObjectStorage {
         return { ok: false, reason: "not_found" };
       }
       try {
-        const file = await readFile(full);
+        const file = await readFile(/* turbopackIgnore: true */ full);
         const body = new Uint8Array(file.byteLength);
         body.set(file);
         return { ok: true, body };
@@ -97,7 +98,7 @@ function filesystemStorage(root: string): PrivateObjectStorage {
         return { ok: false, reason: "provider_failed" };
       }
       try {
-        await rm(full, { force: true });
+        await rm(/* turbopackIgnore: true */ full, { force: true });
         return { ok: true };
       } catch {
         return { ok: false, reason: "provider_failed" };
@@ -249,7 +250,8 @@ export function createPrivateStorage(
     if (problem) {
       return unconfiguredStorage();
     }
-    return filesystemStorage(path.resolve(env.STORAGE_LOCAL_ROOT ?? ""));
+    const storageRoot = env.STORAGE_LOCAL_ROOT ?? "";
+    return filesystemStorage(path.resolve(/* turbopackIgnore: true */ storageRoot));
   }
   if (provider === "s3") {
     const bucket = env.STORAGE_BUCKET?.trim();
