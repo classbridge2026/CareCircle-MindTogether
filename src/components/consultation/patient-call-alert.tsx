@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { declinedCallIds, rememberDeclinedCall } from "./declined-calls";
 import { IncomingCallDialog } from "./incoming-call";
+import { primeRingtone } from "./ringtone";
 
 type IncomingCall = {
   appointmentId: string;
@@ -21,6 +22,10 @@ export function PatientCallAlert() {
   const [declined, setDeclined] = useState<string[]>([]);
   const [joining, setJoining] = useState(false);
   const onConsultation = /\/patient\/appointments\/[^/]+\/consultation\/?$/.test(pathname);
+
+  useEffect(() => {
+    primeRingtone();
+  }, []);
 
   useEffect(() => {
     if (onConsultation) return;

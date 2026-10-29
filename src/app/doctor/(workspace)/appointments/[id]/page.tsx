@@ -200,7 +200,7 @@ export default async function DoctorAppointmentPage({
           <p className="doc-banner">The video and audio window for this visit has closed.</p>
         ) : null}
         <div className="doc-actions">
-          {preparing ? (
+          {preparing && !missed ? (
             <Link className="doc-btn" href={`/doctor/appointments/${visit.id}/consultation`}>
               <VisitIcon name={online ? "video" : "calendar"} />
               {visit.status === "IN_PROGRESS" ? "Continue consultation" : "Prepare for consultation"}
@@ -266,7 +266,7 @@ export default async function DoctorAppointmentPage({
               />
             </section>
           ) : null}
-          {preparing ? (
+          {preparing && !missed ? (
             <section className="doc-panel">
               <h2>Prepare for consultation</h2>
               <p className="doc-quiet">This booking is approved. Review the visit and open the consultation. When you end the consultation, the system marks it complete.</p>

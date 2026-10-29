@@ -1,48 +1,82 @@
-export function startRingtone(): () => void {
-  const Ctx = window.AudioContext;
-  if (!Ctx) return () => undefined;
-  let ctx: AudioContext;
-  try {
-    ctx = new Ctx();
-  } catch {
-    return () => undefined;
+let shared: AudioContext | null = null;
+let primed = false;
+
+function audioContext(): AudioContext | null {
+  const Ctx = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) return null;
+  if (!shared || shared.state === "closed") {
+    try {
+      shared = new Ctx();
+    } catch {
+      return null;
+    }
   }
+  return shared;
+}
+
+/** Unlock sound on the first tap so a later incoming call can ring immediately. */
+export function primeRingtone() {
+  if (primed || typeof window === "undefined") return;
+  primed = true;
+  const unlock = () => {
+    const ctx = audioContext();
+    if (ctx && ctx.state === "suspended") void ctx.resume().catch(() => undefined);
+  };
+  window.addEventListener("pointerdown", unlock, { passive: true });
+  window.addEventListener("keydown", unlock);
+  unlock();
+}
+
+function pulse() {
+  if (typeof navigator.vibrate === "function") navigator.vibrate([450, 180, 450, 1100]);
+}
+
+export function startRingtone(): () => void {
+  const ctx = audioContext();
+  if (!ctx) return () => undefined;
   let stopped = false;
+  let playing = false;
   let timer = 0;
 
-  function tone(when: number) {
+  function tone(when: number, duration: number) {
     const gain = ctx.createGain();
     gain.connect(ctx.destination);
     gain.gain.setValueAtTime(0.0001, when);
-    gain.gain.exponentialRampToValueAtTime(0.06, when + 0.03);
-    gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.38);
+    gain.gain.exponentialRampToValueAtTime(0.2, when + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
     for (const frequency of [440, 480]) {
       const osc = ctx.createOscillator();
       osc.type = "sine";
       osc.frequency.value = frequency;
       osc.connect(gain);
       osc.start(when);
-      osc.stop(when + 0.4);
+      osc.stop(when + duration);
     }
   }
 
   function pattern() {
-    if (stopped || ctx.state === "closed") return;
+    if (stopped || ctx.state !== "running") {
+      playing = false;
+      return;
+    }
     const now = ctx.currentTime;
     try {
-      tone(now);
-      tone(now + 0.5);
+      tone(now, 0.42);
+      tone(now + 0.55, 0.42);
+      pulse();
     } catch {
       stopped = true;
       return;
     }
-    timer = window.setTimeout(pattern, 2400);
+    timer = window.setTimeout(pattern, 2000);
   }
 
   function resume() {
-    if (stopped) return;
+    if (stopped || playing) return;
     void ctx.resume().then(() => {
-      if (!stopped && ctx.state === "running") pattern();
+      if (stopped || playing || ctx.state !== "running") return;
+      playing = true;
+      pattern();
     }).catch(() => undefined);
   }
 
@@ -50,8 +84,9 @@ export function startRingtone(): () => void {
   window.addEventListener("pointerdown", resume);
   return () => {
     stopped = true;
+    playing = false;
     window.clearTimeout(timer);
     window.removeEventListener("pointerdown", resume);
-    void ctx.close().catch(() => undefined);
+    if (typeof navigator.vibrate === "function") navigator.vibrate(0);
   };
 }

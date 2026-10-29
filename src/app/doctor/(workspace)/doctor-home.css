@@ -7,7 +7,7 @@
   container-name: docpage;
 }
 
-.doc-hero {
+.doc-dash .doc-hero {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -20,14 +20,14 @@
   background: linear-gradient(135deg, #d8f3ee 0%, #e7f4f2 42%, #cfe8e3 100%);
 }
 
-.doc-hero-copy {
+.doc-dash .doc-hero-copy {
   display: grid;
   gap: 0.4rem;
   min-width: 0;
   flex: 1 1 14rem;
 }
 
-.doc-hero h1 {
+.doc-dash .doc-hero h1 {
   margin: 0;
   color: #0c2b45;
   font-size: clamp(1.15rem, 2vw, 1.45rem);
@@ -35,7 +35,7 @@
   letter-spacing: -0.03em;
 }
 
-.doc-hero-copy > p {
+.doc-dash .doc-hero-copy > p {
   margin: 0;
   max-width: 34rem;
   color: #3a5560;
@@ -75,7 +75,7 @@
   font-weight: 700;
 }
 
-.doc-hero-photo {
+.doc-dash .doc-hero-photo {
   display: block;
   width: 5.25rem;
   height: 5.25rem;
@@ -475,18 +475,18 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .doc-hero-photo {
+  .doc-dash .doc-hero-photo {
     width: 6.5rem;
     height: 6.5rem;
   }
 }
 
 @container docpage (min-width: 720px) {
-  .doc-hero {
+  .doc-dash .doc-hero {
     padding: 1.15rem 1.25rem;
   }
 
-  .doc-hero-photo {
+  .doc-dash .doc-hero-photo {
     width: 7.5rem;
     height: 7.5rem;
   }
@@ -499,7 +499,7 @@
 }
 
 @media (max-width: 1023px) {
-  .doc-hero {
+  .doc-dash .doc-hero {
     display: grid;
     grid-template-columns: 4.75rem minmax(0, 1fr);
     grid-template-areas:
@@ -512,11 +512,11 @@
     padding: 0.95rem;
   }
 
-  .doc-hero-copy {
+  .doc-dash .doc-hero-copy {
     display: contents;
   }
 
-  .doc-hero-photo {
+  .doc-dash .doc-hero-photo {
     grid-area: photo;
     width: 4.75rem;
     height: 4.75rem;
@@ -528,14 +528,14 @@
     object-position: center;
   }
 
-  .doc-hero h1 {
+  .doc-dash .doc-hero h1 {
     grid-area: title;
     align-self: end;
     font-size: 1.2rem;
     line-height: 1.2;
   }
 
-  .doc-hero-copy > p:not(.doc-clock) {
+  .doc-dash .doc-hero-copy > p:not(.doc-clock) {
     grid-area: note;
     align-self: start;
     max-width: none;
@@ -543,13 +543,13 @@
     line-height: 1.35;
   }
 
-  .doc-hero .doc-clock {
+  .doc-dash .doc-hero .doc-clock {
     grid-area: clock;
     width: 100%;
     margin: 0.65rem 0 0;
   }
 
-  .doc-hero .doc-clock-time strong {
+  .doc-dash .doc-hero .doc-clock-time strong {
     font-size: 1.15rem;
   }
 }
