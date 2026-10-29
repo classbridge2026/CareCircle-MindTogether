@@ -383,7 +383,7 @@ export function doctorOpening(place: string) {
 export const PATIENT_STARTERS = ["How do I book a doctor?", "What is in the sidebar?", "Can I see my screening result?"];
 export const DOCTOR_STARTERS = ["How do I start a consultation?", "Who can I see?", "How do I set my hours?"];
 
-function greet(question: string, opening: string) {
+function greet(question: string) {
   return /^(hi|hello|hey|good morning|good afternoon|good evening)\b/.test(question);
 }
 

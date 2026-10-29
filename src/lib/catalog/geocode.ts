@@ -60,7 +60,10 @@ function districtLine(address: NominatimAddress, locality: string) {
 function detailLine(address: NominatimAddress, title: string) {
   const parts = [address.suburb, address.city || address.town || address.village || address.municipality, address.state || address.county, address.country]
     .map((part) => part?.trim())
-    .filter((part): part is string => Boolean(part) && part.toLowerCase() !== title.toLowerCase());
+    .filter((part): part is string => {
+      if (!part) return false;
+      return part.toLowerCase() !== title.toLowerCase();
+    });
   return [...new Set(parts)].slice(0, 3).join(", ");
 }
 

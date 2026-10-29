@@ -83,7 +83,9 @@ function filesystemStorage(root: string): PrivateObjectStorage {
         return { ok: false, reason: "not_found" };
       }
       try {
-        const body = await readFile(full);
+        const file = await readFile(full);
+        const body = new Uint8Array(file.byteLength);
+        body.set(file);
         return { ok: true, body };
       } catch {
         return { ok: false, reason: "not_found" };
