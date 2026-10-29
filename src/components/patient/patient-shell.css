@@ -255,10 +255,6 @@
     z-index: 35;
   }
 
-  .patient-app .portal-search {
-    display: none;
-  }
-
   .patient-app .patient-scroll {
     padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
     scrollbar-width: none;
@@ -277,12 +273,8 @@
 
   .patient-app .portal-navbar,
   .doctor-app .portal-navbar {
+    height: calc(4rem + env(safe-area-inset-top, 0px));
     padding-top: env(safe-area-inset-top, 0px);
-  }
-
-  .patient-app .portal-navbar {
-    height: calc(3.6rem + env(safe-area-inset-top, 0px));
-    padding-inline: 0.75rem;
   }
 
   .portal-nav-toggle {

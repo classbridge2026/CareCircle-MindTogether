@@ -108,9 +108,9 @@ export default async function DoctorPage() {
               <h2>Quick Actions</h2>
             </header>
             <ul className="doc-actions">
-              <Action href="/doctor/appointments" icon="calendar" label="View Full Schedule" />
-              <Action href="/doctor/availability" icon="clock" label="Update Availability" />
-              <Action href="/doctor/availability#time-off" icon="plus" label="Add Time Off" />
+              <Action href="/doctor/appointments" icon="calendar" label="View Full Schedule" short="Schedule" />
+              <Action href="/doctor/availability" icon="clock" label="Update Availability" short="Hours" />
+              <Action href="/doctor/availability#time-off" icon="plus" label="Add Time Off" short="Time off" />
             </ul>
           </article>
           <aside className="doc-thanks">
@@ -138,14 +138,15 @@ function Stat({ icon, tone, label, value, note }: { icon: DashIconName; tone: st
   );
 }
 
-function Action({ href, icon, label }: { href: string; icon: DashIconName; label: string }) {
+function Action({ href, icon, label, short }: { href: string; icon: DashIconName; label: string; short: string }) {
   return (
     <li>
       <Link className="doc-action" href={href}>
         <span className="doc-action-icon">
           <DashIcon name={icon} />
         </span>
-        <span>{label}</span>
+        <span className="doc-action-label">{label}</span>
+        <span className="doc-action-short">{short}</span>
         <DashIcon name="chevron" />
       </Link>
     </li>

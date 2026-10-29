@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComments, faXmark } from "@fortawesome/free-solid-svg-icons";
 import type { RoleTurn } from "@/lib/guide/role-guide";
+import { GuideCopy } from "./guide-copy";
 import "./portal-guide.css";
 
 type Message = { id: number; role: "user" | "assistant"; text: string; href?: string; label?: string };
@@ -152,27 +152,11 @@ export function GuidePanel<T>({
                   </span>
                 ) : null}
                 <div className={message.role === "user" ? "guide-bubble is-user" : "guide-bubble"}>
-                  {message.text
-                    .split(/\n+/)
-                    .filter((line) => line.trim())
-                    .filter((line) => !message.label || line.trim() !== `Click to go to ${message.label}.`)
-                    .map((line) => (
-                      <p key={line}>{line}</p>
-                    ))}
-                  {message.href && message.label ? (
-                    <Link
-                      href={message.href}
-                      prefetch={false}
-                      onClick={(event) => {
-                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-                        event.preventDefault();
-                        setOpen(false);
-                        router.push(message.href!);
-                      }}
-                    >
-                      Click to go to {message.label}
-                    </Link>
-                  ) : null}
+                  {message.role === "user" ? (
+                    <p>{message.text}</p>
+                  ) : (
+                    <GuideCopy text={message.text} href={message.href} label={message.label} onOpen={(href) => { setOpen(false); router.push(href); }} />
+                  )}
                 </div>
               </div>
             ))}

@@ -44,7 +44,6 @@ export async function closeOnlineRoom(
       metadata: { reason: input.reason },
     });
   } catch {
-    console.error("consultation_room_close_failed");
     await audit(db, {
       actorUserId: input.actorUserId,
       appointmentId: row.id,

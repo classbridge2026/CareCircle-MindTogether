@@ -219,55 +219,105 @@
   background: #f3f8fc;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 1023px) {
+  .find-head h1 {
+    font-size: 1.45rem;
+  }
+
+  .find-head p {
+    font-size: 0.88rem;
+  }
+
   .doc-card {
-    grid-template-columns: 4rem minmax(0, 1fr);
-    align-items: start;
-    gap: 0.55rem 0.75rem;
-    padding: 0.9rem;
+    grid-template-columns: 4.75rem minmax(0, 1fr);
+    grid-template-areas:
+      "photo name"
+      "photo cred"
+      "chips chips"
+      "modes modes"
+      "fee fee"
+      "actions actions";
+    align-items: center;
+    gap: 0.2rem 0.85rem;
+    padding: 1rem;
+    border: 0;
+    border-radius: 1.25rem;
+    background: linear-gradient(180deg, #f3fbf9 0%, #fff 46%);
+    box-shadow: 0 0.45rem 1.15rem rgba(12, 43, 69, 0.07);
   }
 
   .doc-card > img {
-    grid-row: 1 / span 2;
-    grid-column: 1;
-    width: 4rem !important;
-    height: 4rem !important;
+    grid-area: photo;
+    width: 4.75rem !important;
+    height: 4.75rem !important;
+    align-self: center;
+    border: 3px solid #fff;
+    box-shadow: 0 0.3rem 0.8rem rgba(15, 118, 110, 0.16);
   }
 
   .doc-card-body {
     display: contents;
   }
 
-  .doc-name-row,
-  .doc-cred {
-    grid-column: 2;
+  .doc-name-row {
+    grid-area: name;
+    align-self: end;
     min-width: 0;
   }
 
-  .doc-name-row h2,
-  .doc-name-row a,
-  .doc-cred {
-    overflow-wrap: anywhere;
+  .doc-name-row h2 {
+    font-size: 1.2rem;
   }
 
-  .doc-chips,
-  .doc-modes,
-  .doc-fee,
-  .doc-actions {
-    grid-column: 1 / -1;
+  .doc-cred {
+    grid-area: cred;
+    align-self: start;
     min-width: 0;
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+
+  .doc-chips {
+    grid-area: chips;
+    margin-top: 0.55rem;
+  }
+
+  .doc-chips li {
+    background: #e7f4f2;
+    color: #0f766e;
   }
 
   .doc-modes {
-    flex-wrap: nowrap;
+    grid-area: modes;
+    flex-wrap: wrap;
   }
 
   .doc-modes li {
-    flex: 0 0 auto;
-    white-space: nowrap;
+    background: #fff;
+  }
+
+  .doc-fee {
+    grid-area: fee;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.35rem;
+    padding: 0.7rem 0.8rem;
+    border-radius: 0.9rem;
+    background: #f4f8fb;
   }
 
   .doc-actions {
-    grid-template-columns: 1fr 1fr;
+    grid-area: actions;
+    grid-template-columns: 1fr;
+    min-width: 0;
+    margin-top: 0.45rem;
+  }
+
+  .doc-book,
+  .doc-profile {
+    height: 2.75rem;
+    border-radius: 0.85rem;
   }
 }

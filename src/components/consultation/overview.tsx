@@ -65,51 +65,62 @@ export function AppointmentOverview({
   } | null;
   children?: React.ReactNode;
 }) {
+  const facts = [
+    { label: "When", value: `${when} · Africa/Freetown` },
+    { label: "Duration", value: duration },
+    { label: "Mode", value: modeLabel },
+    { label: "Payment", value: paymentLabel },
+    { label: "Reference", value: reference },
+  ];
+
   return (
     <div className="flow-page">
       <Link className="visit-back" href={backHref}>{backLabel}</Link>
-      <h1>Appointment details</h1>
-      <article className="flow-card">
-        <div className="flow-person">
-          <ProfilePhoto userId={personUserId} name={personName} version={personImageVersion} size={56} alt="" />
-          <div>
-            <strong>
-              {personName}
-              {verified ? <span className="flow-badge">Verified</span> : null}
-            </strong>
-            <span>{personDetail}</span>
+      <article className="visit-id">
+        <div className="visit-id-band" aria-hidden="true" />
+        <ProfilePhoto userId={personUserId} name={personName} version={personImageVersion} size={96} alt={`${personName} profile photo`} />
+        <div>
+          <p className="visit-id-kicker">{statusLabel}</p>
+          <h1>
+            {personName}
+            {verified ? <span className="visit-id-badge">Verified</span> : null}
+          </h1>
+          <p className="visit-id-role">{[service, personDetail].filter(Boolean).join(" · ")}</p>
+          <ul className="visit-id-facts">
+            {facts.map((fact) => (
+              <li key={fact.label}>
+                <span>{fact.label}</span>
+                <strong>{fact.value}</strong>
+              </li>
+            ))}
+          </ul>
+          <p className="visit-id-message" role="status">{message}</p>
+          {inProgressHref ? (
+            <p className="visit-id-message">This consultation is in progress. You can return to the room. Leaving the video does not complete the visit.</p>
+          ) : null}
+          <div className="visit-id-actions">
+            {joinHref ? <Link className="visit-btn" href={joinHref}>{joinLabel}</Link> : null}
+            {inProgressHref ? <Link className="visit-btn" href={inProgressHref}>Return to consultation</Link> : null}
+            {secondaryHref && secondaryLabel ? <Link className="visit-btn-ghost" href={secondaryHref}>{secondaryLabel}</Link> : null}
+            {supportEmail ? <a className="visit-btn-ghost" href={`mailto:${supportEmail}`}>Contact support</a> : <span className="visit-id-message">A support email has not been published for this clinic.</span>}
           </div>
+          {children}
         </div>
-        <p className="flow-meta">{service}</p>
-        <dl className="flow-rows">
-          <div><dt>Date and time</dt><dd>{when} · Africa/Freetown</dd></div>
-          <div><dt>Duration</dt><dd>{duration}</dd></div>
-          <div><dt>Consultation mode</dt><dd>{modeLabel}</dd></div>
-          <div><dt>Status</dt><dd>{statusLabel}</dd></div>
-          <div><dt>Payment</dt><dd>{paymentLabel}</dd></div>
-          <div><dt>Appointment reference</dt><dd>{reference}</dd></div>
-        </dl>
-        {instructions ? <p className="flow-note">{instructions}</p> : null}
-        {place ? (
-          <div className="flow-note">
-            <strong>{place.name}</strong>
-            <p>{place.address}</p>
-            {place.phone ? <p>Clinic phone: {place.phone}</p> : null}
-            <p>{place.instructions ?? "No arrival instructions have been added."}</p>
-          </div>
-        ) : null}
-        <p role="status">{message}</p>
-        {inProgressHref ? (
-          <p className="flow-note">This consultation is in progress. You can return to the room. Leaving the video does not complete the visit.</p>
-        ) : null}
-        <div className="flow-actions">
-          {joinHref ? <Link className="flow-btn" href={joinHref}>{joinLabel}</Link> : null}
-          {inProgressHref ? <Link className="flow-btn" href={inProgressHref}>Return to consultation</Link> : null}
-          {secondaryHref && secondaryLabel ? <Link className="flow-btn-ghost" href={secondaryHref}>{secondaryLabel}</Link> : null}
-          {supportEmail ? <a className="flow-btn-ghost" href={`mailto:${supportEmail}`}>Contact support</a> : <span className="flow-note">A support email has not been published for this clinic.</span>}
-        </div>
-        {children}
       </article>
+      {instructions ? (
+        <section className="visit-panel">
+          <h2>Before the visit</h2>
+          <p>{instructions}</p>
+        </section>
+      ) : null}
+      {place ? (
+        <section className="visit-panel">
+          <h2>{place.name}</h2>
+          <p>{place.address}</p>
+          {place.phone ? <p>Clinic phone: {place.phone}</p> : null}
+          <p>{place.instructions ?? "No arrival instructions have been added."}</p>
+        </section>
+      ) : null}
       {completed ? (
         <section className="flow-done" aria-labelledby="consult-complete">
           <div className="flow-done-mark" aria-hidden="true">

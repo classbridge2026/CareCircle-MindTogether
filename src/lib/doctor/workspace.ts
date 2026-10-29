@@ -60,7 +60,7 @@ export async function loadDoctorDashboard(db: PrismaClient, doctor: { id: string
     const [today, upcomingCount, followUpCount, followUpsThisWeek, inProgress, unreleased, openVisits, patientGroups] = await Promise.all([
       db.appointment.findMany({
         where: { doctorProfileId: doctor.id, startsAt: { gte: dayStart, lt: dayEnd } },
-        orderBy: { startsAt: "asc" },
+        orderBy: { startsAt: "desc" },
         take: 20,
         select: visitSelect,
       }),

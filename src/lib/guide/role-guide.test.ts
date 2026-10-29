@@ -7,7 +7,8 @@ const doctorFacts = { ready: true, today: 3, pendingToday: 1, activePatients: 4,
 describe("role guide", () => {
   it("tells a patient how to book and refuses administrator work", () => {
     const booked = chatWithPatient({ pathname: "/patient", question: "How do I book a doctor?" });
-    expect(booked.text).toMatch(/approved, active doctors|Book appointment/);
+    expect(booked.text).toMatch(/1\. Click \*\*Find a Doctor\*\*/);
+    expect(booked.text).toMatch(/2\. Click \*\*Book appointment\*\*/);
     expect(booked.link?.href).toBe("/patient/find");
     expect(booked.text).toMatch(/payment window/);
     const denied = chatWithPatient({ pathname: "/patient", question: "How do I grant an administrator?" });
@@ -22,7 +23,9 @@ describe("role guide", () => {
 
   it("keeps a doctor inside their own practice", () => {
     const visit = chatWithDoctor({ pathname: "/doctor", question: "How do I start a consultation?" });
-    expect(visit.text).toMatch(/prepare the consultation/);
+    expect(visit.text).toMatch(/1\. Click the booking, then click \*\*Approve\*\* or \*\*Decline\*\*/);
+    expect(visit.text).toMatch(/2\. After you approve, click \*\*Prepare for consultation\*\*/);
+    expect(visit.text).toMatch(/3\. When the visit is finished, click \*\*End consultation\*\*/);
     expect(visit.text).toMatch(/marks the visit complete/);
     expect(visit.text).toMatch(/another doctor/);
     expect(visit.link?.href).toBe("/doctor/appointments");

@@ -50,7 +50,7 @@ export async function POST(request: Request, context: { params: Promise<{ appoin
       try {
         await closeConsultationRoom(config.config, roomName);
       } catch {
-        console.error("consultation_room_close_failed");
+        // Ending the call still succeeds when the room is already closed.
       }
     }
     return NextResponse.json({ ok: true }, { status: 200, headers: noStore });

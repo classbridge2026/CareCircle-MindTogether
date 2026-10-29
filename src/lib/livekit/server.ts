@@ -60,9 +60,22 @@ export async function ensureConsultationRoom(config: LiveKitConfig, roomName: st
   });
 }
 
+function roomAlreadyGone(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const status = "status" in error ? Number(error.status) : 0;
+  const code = "code" in error ? String(error.code).toLowerCase() : "";
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  return status === 404 || code === "not_found" || message.includes("does not exist") || message.includes("not found");
+}
+
 export async function closeConsultationRoom(config: LiveKitConfig, roomName: string): Promise<void> {
   const client = createRoomClient(config);
-  await client.deleteRoom(roomName);
+  try {
+    await client.deleteRoom(roomName);
+  } catch (error) {
+    if (roomAlreadyGone(error)) return;
+    throw error;
+  }
 }
 
 export type RoomParticipant = {

@@ -1,3 +1,4 @@
+import { markClickTargets } from "@/lib/guide/click-targets";
 import { GUIDE_EXAMPLES, GUIDE_FEATURES } from "./guide-features";
 import { addGuideFeatures, learnPortalFeatures, learnedGuideFeature, predictGuideFeature } from "./guide-model";
 
@@ -816,13 +817,36 @@ export function openingLine(place: string) {
   return `Hello. I can walk you through how this administration portal operates. You are on ${place}. Ask me anything, for example how to add a doctor.`;
 }
 
-function prose(reply: GuideReply) {
+function asksHowTo(question: string) {
+  return /\bhow\b/.test(question) && !/\bhow (many|much)\b/.test(question);
+}
+
+function stepLines(parts: string[]) {
+  const lines = parts.flatMap((part) =>
+    part
+      .split(/(?<=[.!?])\s+/)
+      .map((line) => line.trim())
+      .filter(Boolean),
+  );
+  return lines
+    .map((line, index) => {
+      const marked = markClickTargets(line);
+      const body = /[.!?]$/.test(marked) ? marked : `${marked}.`;
+      return `${index + 1}. ${body}`;
+    })
+    .join("\n");
+}
+
+function prose(reply: GuideReply, howTo = false) {
   if (reply.title === "Portal guide" || reply.title === "I can explain the portal") {
     return "I can walk you through any admin task, from adding a doctor to fees, locations, screening, and the page you are on. I don't look up a person or change a record from this chat. Ask me the step you want.";
   }
   const steps = reply.steps.filter(Boolean);
   const summary = reply.paragraphs[0] ?? "";
   const caution = reply.paragraphs.find((line) => line !== summary) ?? "";
+  if (howTo && steps.length > 0) {
+    return [summary, stepLines(steps), caution].filter((line, index, all) => line && all.indexOf(line) === index).join("\n\n");
+  }
   const spoken = steps.join(" ");
   if (spoken.length > 140) return caution ? `${spoken}\n\n${caution}` : spoken;
   if (spoken) return [summary, spoken, caution].filter((line, index, all) => line && all.indexOf(line) === index).join("\n\n");
@@ -902,7 +926,9 @@ export function chatWithPortal(input: { question: string; pathname: string; supe
     return { topicId: reply.topicId, text: `Click to go to ${reply.links[0].label}.`, link: reply.links[0] };
   }
   const next = reply.topicId ? NEXT_STEP[reply.topicId] : undefined;
-  const howTo = /\b(how|add|create|approve|activate|verify)\b/.test(question);
-  const text = next && howTo && !prose(reply).includes(next.label) ? `${prose(reply)}\n\n${next.text}` : prose(reply);
+  const howTo = asksHowTo(question);
+  const procedural = howTo || /\b(add|create|approve|activate|verify)\b/.test(question);
+  const body = prose(reply, howTo);
+  const text = next && procedural && !body.includes(next.label) ? `${body}\n\n${next.text}` : body;
   return { topicId: reply.topicId, text, link: reply.links[0] ?? (next ? { href: next.href, label: next.label } : null) };
 }

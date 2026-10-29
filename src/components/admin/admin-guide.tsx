@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { loadGuideFactsAction } from "@/app/admin/guide-actions";
+import { GuideCopy } from "@/components/guide/guide-copy";
 import { chatWithPortal, guidePlace, openingLine, type PortalFacts } from "@/lib/admin/portal-guide";
 import { AdminIcon } from "./admin-icons";
 
@@ -136,27 +136,11 @@ export function AdminGuide({ superAdmin, systemName }: { superAdmin: boolean; sy
                   </span>
                 ) : null}
                 <div className={message.role === "user" ? "guide-bubble is-user" : "guide-bubble"}>
-                  {message.text
-                    .split(/\n+/)
-                    .filter((line) => line.trim())
-                    .filter((line) => !message.label || line.trim() !== `Click to go to ${message.label}.`)
-                    .map((line) => (
-                      <p key={line}>{line}</p>
-                    ))}
-                  {message.href && message.label ? (
-                    <Link
-                      href={message.href}
-                      prefetch={false}
-                      onClick={(event) => {
-                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-                        event.preventDefault();
-                        setOpen(false);
-                        router.push(message.href!);
-                      }}
-                    >
-                      Click to go to {message.label}
-                    </Link>
-                  ) : null}
+                  {message.role === "user" ? (
+                    <p>{message.text}</p>
+                  ) : (
+                    <GuideCopy text={message.text} href={message.href} label={message.label} onOpen={(href) => { setOpen(false); router.push(href); }} />
+                  )}
                 </div>
               </div>
             ))}

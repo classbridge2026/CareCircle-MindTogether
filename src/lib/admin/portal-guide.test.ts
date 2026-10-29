@@ -54,6 +54,9 @@ describe("portal guide", () => {
     const start = answerPortalQuestion({ ...admin, question: "Where should I start?" });
     expect(start.steps[0]).toMatch(/Platform settings/);
     const added = chatWithPortal({ ...admin, question: "how an i add doctor?" });
+    expect(added.text).toMatch(/1\. Click \*\*Doctors\*\*, then \*\*Add doctor\*\*/);
+    expect(added.text).toMatch(/2\. You need an active specialty/);
+    expect(added.text).toMatch(/Click \*\*Create doctor and send invitation\*\*/);
     expect(added.text).toMatch(/Create doctor and send invitation/);
     expect(added.text).toMatch(/single-use invitation/);
     expect(added.link?.href).toBe("/admin/doctors");

@@ -1,4 +1,5 @@
 import { learnPortalFeatures, predictGuideFeature } from "@/lib/admin/guide-model";
+import { markClickTargets } from "@/lib/guide/click-targets";
 
 export type RoleLink = { href: string; label: string };
 export type RoleTurn = { topicId: string | null; text: string; link: RoleLink | null; navigate?: boolean };
@@ -44,7 +45,7 @@ const PATIENT_TOPICS: Topic[] = [
     aliases: ["find a doctor", "book a doctor", "book an appointment", "book appointment"],
     keywords: ["find", "book", "booking", "verified", "clinician"],
     summary: "Find a Doctor lists only approved, active doctors. Search by name, open a doctor, then book an online or in-person consultation.",
-    how: "Choose the doctor, then Book appointment. For an in-person visit, choose a clinic before the times appear. Pick a day and an open time. Write what is wrong, at least a short note, and confirm. The visit keeps a payment window. If it is not completed in time, the hold expires and the time is released.",
+    how: "Click Find a Doctor. Click Book appointment on the doctor you want. For an in-person visit, choose a clinic before the times appear. Pick a day and an open time. Write what is wrong, at least a short note, and confirm. The visit keeps a payment window. If it is not completed in time, the hold expires and the time is released.",
     limits: "You book only for this patient account. A doctor who is not approved does not appear.",
   },
   {
@@ -138,7 +139,7 @@ const DOCTOR_TOPICS: Topic[] = [
     aliases: ["appointments", "consultation", "check in", "start a consultation"],
     keywords: ["appointment", "appointments", "check", "consultation", "noshow", "complete"],
     summary: "Appointments are the visits assigned to you.",
-    how: "Open a booking request to approve or decline it. After you approve, prepare the consultation. When you end the consultation, the system marks the visit complete. Cancel asks you to confirm before it is saved, and you can reschedule when the visit allows it.",
+    how: "Click the booking, then click Approve or Decline. After you approve, click Prepare for consultation. When the visit is finished, click End consultation. The system marks the visit complete. Cancel asks you to confirm before it is saved, and you can reschedule when the visit allows it.",
     limits: "You cannot change a visit assigned to another doctor. An unapproved profile cannot take these actions.",
   },
   {
@@ -255,6 +256,24 @@ function amount(count: number, singular: string) {
   return `${count} ${count === 1 ? singular : `${singular}s`}`;
 }
 
+function asksHowTo(question: string) {
+  return /\bhow\b/.test(question) && !/\bhow (many|much)\b/.test(question);
+}
+
+function stepLines(text: string) {
+  const lines = text
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines
+    .map((line, index) => {
+      const marked = markClickTargets(line);
+      const body = /[.!?]$/.test(marked) ? marked : `${marked}.`;
+      return `${index + 1}. ${body}`;
+    })
+    .join("\n");
+}
+
 function train(audience: "patient" | "doctor", topics: Topic[]) {
   learnPortalFeatures(
     topics.flatMap((topic) => [topic.title, topic.summary, topic.how, ...topic.aliases, ...topic.keywords].map((text) => ({ featureId: topic.id, text }))),
@@ -361,7 +380,8 @@ function answer(audience: "patient" | "doctor", topics: Topic[], question: strin
         : "I can explain your own practice only: your appointments, your patients, your notes, and your hours.";
     return { topicId: place.id, text: `${refusal} You are on ${place.title}.`, link: { href: place.href, label: place.title } };
   }
-  return { topicId: topic.id, text: `${topic.how}\n\n${topic.limits}`, link: { href: topic.href, label: topic.title } };
+  const steps = asksHowTo(question) ? stepLines(topic.how) : topic.how;
+  return { topicId: topic.id, text: `${steps}\n\n${topic.limits}`, link: { href: topic.href, label: topic.title } };
 }
 
 export function patientPlace(pathname: string) {
