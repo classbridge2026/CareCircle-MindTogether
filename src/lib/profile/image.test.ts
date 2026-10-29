@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { inspectProfileImage, openProfileImage } from "./image";
 
 describe("inspectProfileImage", () => {
+  it("accepts a jpeg saved with the image/jpg type some phones send", () => {
+    const result = inspectProfileImage({
+      filename: "me.jpg",
+      declaredMime: "image/jpg",
+      bytes: new Uint8Array([0xff, 0xd8, 0xff, 0x00]),
+    });
+    expect(result.ok).toBe(true);
+  });
+
   it("accepts a jpeg whose type and contents match", () => {
     const result = inspectProfileImage({
       filename: "me.jpg",

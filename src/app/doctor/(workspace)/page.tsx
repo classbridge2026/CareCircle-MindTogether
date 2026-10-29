@@ -81,7 +81,7 @@ export default async function DoctorPage() {
           ) : (
             <ul className="doc-schedule">
               {board.today.map((row) => {
-                const pill = schedulePill(row.status);
+                const pill = schedulePill(row.status, row.passed);
                 return (
                   <li key={row.id}>
                     <Link className="doc-visit" href={`/doctor/appointments/${row.id}`}>
@@ -153,10 +153,11 @@ function Action({ href, icon, label, short }: { href: string; icon: DashIconName
   );
 }
 
-function schedulePill(status: string) {
+function schedulePill(status: string, passed: boolean) {
   if (status === "COMPLETED") return { label: "Completed", tone: "done" };
   if (status === "IN_PROGRESS") return { label: "In Progress", tone: "live" };
   if (status === "PENDING_APPROVAL") return { label: "Needs approval", tone: "wait" };
+  if (passed && (status === "CONFIRMED" || status === "PENDING_PAYMENT" || status === "CHECKED_IN")) return { label: "Time passed", tone: "wait" };
   if (status === "CONFIRMED" || status === "PENDING_PAYMENT") return { label: "Upcoming", tone: "next" };
   if (status === "CHECKED_IN") return { label: "Checked in", tone: "live" };
   if (status.startsWith("CANCELLED") || status === "NO_SHOW" || status === "EXPIRED_UNPAID") return { label: appointmentStatusLabel(status), tone: "stop" };

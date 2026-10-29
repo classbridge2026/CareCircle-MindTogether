@@ -125,7 +125,7 @@ export function NotificationBell({
     function schedule(delay: number) {
       timer = window.setTimeout(() => {
         void look().finally(() => {
-          if (!stop) schedule(5000);
+          if (!stop) schedule(20000);
         });
       }, delay);
     }
@@ -134,7 +134,7 @@ export function NotificationBell({
       if (document.visibilityState === "visible") void look();
     }
 
-    schedule(3000);
+    schedule(12000);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       stop = true;

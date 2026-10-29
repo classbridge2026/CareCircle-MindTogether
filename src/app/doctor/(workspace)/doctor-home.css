@@ -283,7 +283,7 @@
   list-style: none;
 }
 
-.doc-visit {
+.doc-dash a.doc-visit {
   display: grid;
   grid-template-columns: 5.4rem minmax(0, 1fr) auto auto;
   align-items: center;
@@ -295,43 +295,43 @@
   text-decoration: none;
 }
 
-.doc-visit:hover {
+.doc-dash a.doc-visit:hover {
   background: #f3f8fc;
 }
 
-.doc-visit time {
+.doc-dash a.doc-visit time {
   color: #5b6b7c;
   font-size: 0.82rem;
   font-weight: 700;
   white-space: nowrap;
 }
 
-.doc-visit-who {
+.doc-dash .doc-visit-who {
   display: flex;
   align-items: center;
   gap: 0.7rem;
   min-width: 0;
 }
 
-.doc-visit-copy {
+.doc-dash .doc-visit-copy {
   display: grid;
   min-width: 0;
 }
 
-.doc-visit-copy strong,
-.doc-visit-copy span {
+.doc-dash .doc-visit-copy strong,
+.doc-dash .doc-visit-copy span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.doc-visit-copy strong {
+.doc-dash .doc-visit-copy strong {
   color: #0c2b45;
   font-size: 0.9rem;
   font-weight: 800;
 }
 
-.doc-visit-copy span {
+.doc-dash .doc-visit-copy span {
   color: #6b7c93;
   font-size: 0.75rem;
 }
@@ -354,7 +354,7 @@
 .doc-pill-wait { background: #fff4e5; color: #b45309; }
 .doc-pill-stop { background: #fdecee; color: #9b2330; }
 
-.doc-visit svg {
+.doc-dash a.doc-visit svg {
   width: 0.7rem;
   height: 0.7rem;
   color: #9aafc2;
@@ -452,20 +452,20 @@
     white-space: normal;
   }
 
-  .doc-visit {
+  .doc-dash a.doc-visit {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.35rem 0.65rem;
   }
 
-  .doc-visit time {
+  .doc-dash a.doc-visit time {
     grid-column: 1;
   }
 
-  .doc-visit-who {
+  .doc-dash .doc-visit-who {
     grid-column: 1 / -1;
   }
 
-  .doc-visit > svg {
+  .doc-dash a.doc-visit > svg {
     display: none;
   }
 }
@@ -551,5 +551,22 @@
 
   .doc-dash .doc-hero .doc-clock-time strong {
     font-size: 1.15rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .doc-dash .doc-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .doc-dash .doc-hero-photo {
+    width: 7.5rem;
+    height: 7.5rem;
+  }
+}
+
+@media (min-width: 1180px) {
+  .doc-dash .doc-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

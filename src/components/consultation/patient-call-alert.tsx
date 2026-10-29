@@ -31,6 +31,7 @@ export function PatientCallAlert() {
     if (onConsultation) return;
     let stop = false;
     async function look() {
+      if (document.visibilityState === "hidden") return;
       try {
         const response = await fetch("/api/patient/consultation-calls", { cache: "no-store" });
         if (!response.ok) return;
@@ -47,7 +48,7 @@ export function PatientCallAlert() {
       if (stop) return;
       timer = window.setTimeout(() => {
         void look().finally(schedule);
-      }, 3000);
+      }, 12000);
     }
     void look().finally(schedule);
     return () => {

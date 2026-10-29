@@ -28,6 +28,13 @@ function magicMatches(bytes: Uint8Array, magic: readonly number[]): boolean {
   return magic.every((value, index) => bytes[index] === value);
 }
 
+function declaredMime(value: string): string {
+  const declared = value.trim().toLowerCase();
+  if (declared === "image/jpg" || declared === "image/pjpeg") return "image/jpeg";
+  if (declared === "image/x-png") return "image/png";
+  return declared;
+}
+
 function isWebp(bytes: Uint8Array): boolean {
   if (bytes.length < 12) return false;
   const webp = [0x57, 0x45, 0x42, 0x50];
@@ -42,8 +49,8 @@ export function inspectProfileImage(input: { filename: string; declaredMime: str
     return { ok: false, message: "Photos must be 2 MB or smaller." };
   }
   const extension = extensionOf(input.filename);
-  const declared = input.declaredMime.trim().toLowerCase();
-  const match = ALLOWED.find((entry) => entry.extensions.some((item) => item === extension) && entry.mime === declared && magicMatches(input.bytes, entry.magic));
+  const declared = declaredMime(input.declaredMime);
+  const match = ALLOWED.find((entry) => entry.extensions.some((item) => item === extension) && (declared === "" || declared === entry.mime) && magicMatches(input.bytes, entry.magic));
   if (!match || (match.mime === "image/webp" && !isWebp(input.bytes))) {
     return { ok: false, message: "Upload a JPEG, PNG, or WebP photo. The file type and contents must match." };
   }

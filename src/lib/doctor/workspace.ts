@@ -110,6 +110,7 @@ export async function loadDoctorDashboard(db: PrismaClient, doctor: { id: string
         id: row.id,
         time: new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Africa/Freetown" }).format(row.startsAt),
         status: shownAppointmentStatus(row.status, row.endsAt, now),
+        passed: row.endsAt.getTime() <= now.getTime(),
         mode: row.mode,
         patientId: row.patient.id,
         patientUserId: row.patient.user.id,
