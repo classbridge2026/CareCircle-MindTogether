@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatQualification, isLeadSpecialty, publicLanguages, publicSessionFee, readPublicContact, uniqueConsultationModes } from "./landing";
+import { formatQualification, isLeadSpecialty, normalizePublicContact, publicLanguages, publicSessionFee, readPublicContact, uniqueConsultationModes } from "./landing";
 
 describe("public landing data", () => {
   it("publishes only the configured contact fields", () => {
@@ -16,6 +16,17 @@ describe("public landing data", () => {
       phone: "+232 76 000 000",
       address: "Freetown, Sierra Leone",
     });
+  });
+
+  it("accepts a public contact an administrator can save", () => {
+    expect(normalizePublicContact({ email: " hello@clinic.test ", phone: "", address: "Freetown" })).toEqual({
+      ok: true,
+      email: "hello@clinic.test",
+      phone: null,
+      address: "Freetown",
+    });
+    expect(normalizePublicContact({ email: "not-an-email", phone: "", address: "" }).ok).toBe(false);
+    expect(normalizePublicContact({ email: "", phone: "call us", address: "" }).ok).toBe(false);
   });
 
   it("drops contact values that are not ready to display", () => {

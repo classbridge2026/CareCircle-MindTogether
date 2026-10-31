@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { PublicContact, PublicLanding, PublicOffering, PublicService, PublicSpecialty } from "@/lib/public/landing";
+import type { PublicContact, PublicLanding, PublicService } from "@/lib/public/landing";
 import { CareCircleMark } from "@/components/brand";
-import { LandingIcon } from "./icons";
+import { BenefitAppIcon, StepAppIcon } from "./icons";
 import { DoctorCarousel } from "./doctor-carousel";
 import { LandingScroll } from "./landing-scroll";
 import { SiteFooter } from "./site-footer";
 import { SiteHeader } from "./site-header";
+import { AccountSupportPanel } from "@/components/support/account-support-panel";
 import { btnOnNavy, btnOnNavyGhost, btnOnNavyOutline, btnPrimary, btnSecondary, focusRing } from "./styles";
 
 const steps = [
@@ -67,81 +68,52 @@ function UnavailableNotice() {
   );
 }
 
-function SpecialtyCard({ specialty, systemName }: { specialty: PublicSpecialty; systemName: string }) {
-  return (
-    <article className="flex h-full flex-col rounded-2xl border border-brand-line bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 className="text-lg font-semibold text-brand-navy">{specialty.name}</h3>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${specialty.bookable ? "bg-brand-mist text-brand-teal" : "bg-brand-ice text-brand-muted"}`}
-        >
-          {specialty.bookable ? "Open for booking" : "Not open for booking"}
-        </span>
-      </div>
-      <p className="mt-3 flex-1 text-sm leading-6 text-brand-muted">
-        {specialty.description ??
-          (specialty.lead ? `The first specialty on ${systemName}.` : "An active specialty on the platform.")}
-      </p>
-      {specialty.bookable ? (
-        <Link href={`/patient/find?specialty=${specialty.id}`} className={`${btnPrimary} mt-5 w-fit`}>
-          Find a doctor
-        </Link>
-      ) : (
-        <p className="mt-5 text-sm font-medium text-brand-navy">Appointments are not available for this specialty yet.</p>
-      )}
-    </article>
-  );
-}
-
-function OfferingCard({ offering }: { offering: PublicOffering }) {
-  return (
-    <article className="flex h-full flex-col rounded-2xl border border-brand-line bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 className="text-lg font-semibold text-brand-navy">{offering.serviceName}</h3>
-        <span className="rounded-full bg-brand-mist px-3 py-1 text-xs font-semibold text-brand-teal">Open for booking</span>
-      </div>
-      <p className="mt-3 text-sm leading-6 text-brand-ink">
-        {offering.doctorName}
-        <span className="text-brand-muted"> · {offering.specialtyName}</span>
-      </p>
-      <ul className="mt-4 flex flex-wrap gap-2">
-        <li className="rounded-full bg-brand-ice px-3 py-1 text-xs font-semibold text-brand-navy">{modeLabel(offering.mode)}</li>
-        <li className="rounded-full bg-brand-ice px-3 py-1 text-xs font-semibold text-brand-navy">{offering.durationMinutes} min</li>
-        {offering.fee ? <li className="rounded-full bg-brand-ice px-3 py-1 text-xs font-semibold text-brand-navy">{offering.fee}</li> : null}
-      </ul>
-      <Link href={`/patient/doctors/${offering.doctorId}`} className={`${btnPrimary} mt-5 w-fit`}>
-        Book with this doctor
-      </Link>
-    </article>
-  );
-}
-
 function ServiceCard({ service }: { service: PublicService }) {
   return (
-    <article className="rounded-2xl border border-brand-line bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h3 className="text-lg font-semibold text-brand-navy">{service.name}</h3>
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${service.bookable ? "bg-brand-mist text-brand-teal" : "bg-brand-ice text-brand-muted"}`}>
-          {service.bookable ? "Open for booking" : "Not open for booking"}
-        </span>
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#d5deea] bg-white shadow-sm">
+      <header className="bg-brand-navy px-5 py-4 text-white">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-lg font-semibold">{service.name}</h3>
+          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${service.bookable ? "bg-brand-teal text-white" : "bg-white/15 text-white/80"}`}>
+            {service.bookable ? "Open" : "Closed"}
+          </span>
+        </div>
+        {service.modes.length > 0 ? (
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {service.modes.map((mode) => (
+              <li key={mode} className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/25">
+                {modeLabel(mode)}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </header>
+      <div className="flex flex-1 flex-col bg-[#f7fafc] px-5 py-4">
+        {service.description ? <p className="line-clamp-3 flex-1 text-sm leading-6 text-[#3a4a60]">{service.description}</p> : <div className="flex-1" />}
+        {service.durationLabel || service.fee ? (
+          <dl className={`mt-4 grid gap-3 ${service.durationLabel && service.fee ? "grid-cols-[auto_minmax(max-content,1fr)]" : "grid-cols-1"}`}>
+            {service.durationLabel ? (
+              <div className="rounded-xl bg-white px-3 py-2 ring-1 ring-[#d5deea]">
+                <dt className="text-[11px] font-semibold tracking-wide text-[#5b6d84] uppercase">Length</dt>
+                <dd className="mt-1 text-sm font-semibold whitespace-nowrap text-brand-navy">{service.durationLabel}</dd>
+              </div>
+            ) : null}
+            {service.fee ? (
+              <div className="rounded-xl bg-[#e7f3f1] px-3 py-2 ring-1 ring-[#b7ddd6]">
+                <dt className="text-[11px] font-semibold tracking-wide text-brand-teal uppercase">Fee</dt>
+                <dd className="mt-1 text-sm font-semibold whitespace-nowrap text-[#0b5f59]">{service.fee}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
+        {service.bookable ? (
+          <Link href={`/patient/find?service=${service.id}`} className={`${btnPrimary} mt-4 w-full`}>
+            Book now
+          </Link>
+        ) : (
+          <p className="mt-4 text-sm text-[#5b6d84]">This service is published, and it is not available to book yet.</p>
+        )}
       </div>
-      {service.description ? <p className="mt-3 text-sm leading-6 text-brand-muted">{service.description}</p> : null}
-      {service.modes.length > 0 ? (
-        <ul className="mt-4 flex flex-wrap gap-2">
-          {service.modes.map((mode) => (
-            <li key={mode} className="rounded-full bg-brand-ice px-3 py-1 text-xs font-semibold text-brand-navy">
-              {modeLabel(mode)}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-4 text-sm leading-6 text-brand-muted">This service is published, and it is not available to book yet.</p>
-      )}
-      {service.bookable ? (
-        <Link href={`/patient/find?service=${service.id}`} className={`${btnPrimary} mt-5 w-fit`}>
-          Book this service
-        </Link>
-      ) : null}
     </article>
   );
 }
@@ -179,75 +151,32 @@ function DoctorsSection({ content }: { content: PublicLanding }) {
   );
 }
 
-function ServicesSection({ content, systemName }: { content: PublicLanding; systemName: string }) {
-  const others = content.specialties.filter((specialty) => !specialty.lead);
+function ServicesSection({ content }: { content: PublicLanding }) {
   return (
     <section id="services" aria-labelledby="services-heading" className="scroll-mt-24 bg-brand-ice">
       <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <p className="text-sm font-semibold tracking-[0.14em] text-brand-teal uppercase">Services</p>
         <h2 id="services-heading" className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-brand-navy sm:text-4xl">
-          Care for Your Health, Every Step of the Way.
+          Consultation services
         </h2>
         <p className="mt-4 max-w-3xl text-base leading-7 text-brand-muted">
-          {systemName} is launching with mental health and is designed to expand into other medical specialties. A specialty appears here only when it is an active record. It can be booked only when an approved doctor has an active consultation service.
+          Published consultation services. A service can be booked when it is open.
         </p>
         <div className="mt-8">
           {!content.ok ? (
             <UnavailableNotice />
+          ) : content.services.length === 0 ? (
+            <p className="rounded-2xl border border-brand-line bg-white p-5 text-sm leading-6 text-brand-muted">
+              No consultation services are available to book yet.
+            </p>
           ) : (
-            <div className="grid gap-8">
-              {content.specialties.length > 0 ? (
-                <ul className="grid gap-4 md:grid-cols-2">
-                  {content.specialties.map((specialty) => (
-                    <li key={specialty.id}>
-                      <SpecialtyCard specialty={specialty} systemName={systemName} />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="rounded-2xl border border-brand-line bg-white p-5 text-sm leading-6 text-brand-muted">
-                  Mental Health is the first specialty this platform is preparing to offer. It is not open for booking until an active specialty and consultation service are published.
-                </p>
-              )}
-              {others.length === 0 ? (
-                <p className="text-sm leading-6 text-brand-muted">More healthcare specialties are planned for future expansion.</p>
-              ) : null}
-              <div>
-                <h3 className="text-xl font-semibold text-brand-navy">Open offerings</h3>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-brand-muted">
-                  An offering is a consultation service an administrator has assigned to an approved doctor. It appears here while that assignment stays active.
-                </p>
-                {content.offerings.length === 0 ? (
-                  <p className="mt-3 rounded-2xl border border-brand-line bg-white p-5 text-sm leading-6 text-brand-muted">
-                    No doctor offering is open for booking yet.
-                  </p>
-                ) : (
-                  <ul className="mt-4 grid gap-4 md:grid-cols-2">
-                    {content.offerings.map((offering) => (
-                      <li key={offering.id}>
-                        <OfferingCard offering={offering} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-brand-navy">Consultation services</h3>
-                {content.services.length === 0 ? (
-                  <p className="mt-3 rounded-2xl border border-brand-line bg-white p-5 text-sm leading-6 text-brand-muted">
-                    No consultation services are available to book yet.
-                  </p>
-                ) : (
-                  <ul className="mt-4 grid gap-4 md:grid-cols-2">
-                    {content.services.map((service) => (
-                      <li key={service.id}>
-                        <ServiceCard service={service} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
+            <ul className="grid gap-4 md:grid-cols-2">
+              {content.services.map((service) => (
+                <li key={service.id}>
+                  <ServiceCard service={service} />
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </div>
@@ -266,11 +195,8 @@ function ContactSection({ contact }: { contact: PublicContact }) {
             Talk with the platform team
           </h2>
           <p className="mt-4 text-base leading-7 text-brand-muted">
-            For help signing in or recovering a password, use the account support page. This page does not collect messages.
+            For help signing in or recovering a password, send an account support request. An administrator reads it in the admin portal.
           </p>
-          <Link href="/support" className={`${btnSecondary} mt-6`}>
-            Account support
-          </Link>
         </div>
         <div className="rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
           {hasContact ? (
@@ -304,6 +230,7 @@ function ContactSection({ contact }: { contact: PublicContact }) {
             </p>
           )}
         </div>
+        <AccountSupportPanel />
       </div>
     </section>
   );
@@ -360,47 +287,59 @@ export function LandingView({ content, year, systemName }: { content: PublicLand
           </div>
         </section>
 
-        <ServicesSection content={content} systemName={systemName} />
+        <ServicesSection content={content} />
 
-        <section id="how-it-works" aria-labelledby="how-heading" className="scroll-mt-24 bg-white">
+        <section id="how-it-works" aria-labelledby="how-heading" className="scroll-mt-24 bg-brand-paper">
           <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-            <p className="text-sm font-semibold tracking-[0.14em] text-brand-teal uppercase">How it works</p>
-            <h2 id="how-heading" className="mt-3 text-3xl font-semibold tracking-tight text-brand-navy sm:text-4xl">
-              Four steps to a booked visit
-            </h2>
-            <ol className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-sm font-semibold tracking-[0.16em] text-brand-teal uppercase">How it works</p>
+              <h2 id="how-heading" className="mt-3 text-[22px] font-semibold tracking-tight whitespace-nowrap text-brand-navy min-[400px]:text-[26px] sm:text-4xl">
+                Four steps to a booked visit
+              </h2>
+              <p className="mt-4 text-base leading-7 text-brand-muted">
+                Register, choose an approved doctor, pick a published time, and attend the visit the way it was booked.
+              </p>
+            </div>
+            <ol className="mt-12 grid gap-5 sm:grid-cols-2 lg:mt-14 lg:grid-cols-4">
               {steps.map((step, index) => (
-                <li key={step.title} className="rounded-2xl border border-brand-line bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-mist text-brand-teal">
-                      <LandingIcon name={step.icon} className="h-5 w-5" />
-                    </span>
-                    <span className="text-sm font-semibold text-brand-teal">{index + 1}</span>
-                  </div>
-                  <h3 className="mt-4 text-lg font-semibold text-brand-navy">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-brand-muted">{step.body}</p>
+                <li key={step.title} className="flex h-full">
+                  <article className={`flex h-full w-full flex-col rounded-2xl border p-5 shadow-sm ${index % 2 === 0 ? "border-[#c5d4e6] bg-[#eef3f8]" : "border-[#b7ddd6] bg-[#e7f3f1]"}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <StepAppIcon name={step.icon} />
+                      <span className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white ${index % 2 === 0 ? "bg-brand-navy" : "bg-brand-teal"}`}>
+                        {index + 1}
+                      </span>
+                    </div>
+                    <h3 className="mt-4 text-lg font-semibold text-brand-navy">{step.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-brand-muted">{step.body}</p>
+                  </article>
                 </li>
               ))}
             </ol>
-            <Link href="/patient/find" className={`${btnPrimary} mt-8`}>
-              Start booking
-            </Link>
+            <div className="mt-10 text-center">
+              <Link href="/patient/find" className={btnPrimary}>
+                Start booking
+              </Link>
+            </div>
           </div>
         </section>
 
         <section aria-labelledby="why-heading" className="bg-brand-mist">
           <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-            <h2 id="why-heading" className="max-w-3xl text-3xl font-semibold tracking-tight text-brand-navy sm:text-4xl">
-              Why choose {systemName}?
-            </h2>
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-              {benefits.map((benefit) => (
-                <li key={benefit.title} className="rounded-2xl border border-brand-line bg-white p-5 shadow-sm">
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-ice text-brand-navy">
-                    <LandingIcon name={benefit.icon} className="h-5 w-5" />
-                  </span>
-                  <h3 className="mt-4 text-lg font-semibold text-brand-navy">{benefit.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-brand-muted">{benefit.body}</p>
+            <div className="max-w-2xl">
+              <p className="text-sm font-semibold tracking-[0.16em] text-brand-teal uppercase">Why CareCircle</p>
+              <h2 id="why-heading" className="mt-3 text-3xl font-semibold tracking-tight text-brand-navy sm:text-4xl">
+                Why choose {systemName}?
+              </h2>
+            </div>
+            <ul className="mt-10 grid gap-4 sm:grid-cols-2">
+              {benefits.map((benefit, index) => (
+                <li key={benefit.title} className={`flex h-full gap-4 rounded-2xl border border-brand-line bg-white p-5 shadow-sm ${index % 2 === 0 ? "border-l-4 border-l-brand-navy" : "border-l-4 border-l-brand-teal"}`}>
+                  <BenefitAppIcon name={benefit.icon} />
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-semibold text-brand-navy">{benefit.title}</h3>
+                    <p className="mt-1.5 text-sm leading-6 text-brand-muted">{benefit.body}</p>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -431,24 +370,43 @@ export function LandingView({ content, year, systemName }: { content: PublicLand
           </div>
         </section>
 
-        <section id="about" aria-labelledby="about-heading" className="scroll-mt-24 bg-white">
-          <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:px-8">
-            <div>
-              <p className="text-sm font-semibold tracking-[0.14em] text-brand-teal uppercase">About us</p>
+        <div aria-hidden="true" className="h-1 w-full bg-brand-teal" />
+
+        <section id="about" aria-labelledby="about-heading" className="scroll-mt-24 w-full">
+          <div className="grid w-full grid-cols-1 md:grid-cols-2">
+            <div className="w-full bg-[#f7fafc] px-4 py-10 sm:px-8 sm:py-14 lg:px-12 lg:py-16">
+              <p className="text-sm font-semibold tracking-[0.16em] text-brand-teal uppercase">About us</p>
               <h2 id="about-heading" className="mt-3 text-3xl font-semibold tracking-tight text-brand-navy sm:text-4xl">
                 Care that can grow with the people who need it
               </h2>
-              <p className="mt-4 text-base leading-7 text-brand-muted">
+              <p className="mt-4 text-base leading-7 text-[#3a4a60]">
                 {systemName} connects patients with healthcare professionals and is being built to expand access to care. Mental health is the first specialty. Other specialties can be introduced as real services are ready, rather than promised in advance.
               </p>
+              <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row">
+                <Link href="/patient/find" className={`${btnPrimary} w-full sm:flex-1`}>
+                  Find a Doctor
+                </Link>
+                <Link href="/register" className={`${btnSecondary} w-full sm:flex-1`}>
+                  Create a Patient Account
+                </Link>
+              </div>
             </div>
-            <div className="rounded-2xl border border-brand-line bg-brand-paper p-6">
-              <h3 className="text-lg font-semibold text-brand-navy">What you can do today</h3>
-              <ul className="mt-4 grid gap-3 text-sm leading-6 text-brand-muted">
-                <li>Create a patient account and sign in.</li>
-                <li>Review specialties and consultation services that have been published.</li>
-                <li>Choose a time when an approved doctor has an open appointment.</li>
-              </ul>
+            <div className="w-full bg-[#0f6b45] px-4 py-10 text-white sm:px-8 sm:py-14 lg:px-12 lg:py-16">
+              <h3 className="text-lg font-semibold">What you can do today</h3>
+              <ol className="mt-6 grid gap-5">
+                {[
+                  "Create a patient account and sign in.",
+                  "Review specialties and consultation services that have been published.",
+                  "Choose a time when an approved doctor has an open appointment.",
+                ].map((item, index) => (
+                  <li key={item} className="flex gap-3">
+                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-[#0f6b45]">
+                      {index + 1}
+                    </span>
+                    <p className="min-w-0 pt-1 text-sm leading-6 text-white/85">{item}</p>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
         </section>

@@ -214,7 +214,7 @@ export async function listAppointmentPayments(db: PrismaClient, input: { appoint
     const rows = await db.payment.findMany({
       where: { appointmentId: input.appointmentId, appointment: { patient: { userId: input.userId } } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, status: true, amountMinor: true, currency: true, createdAt: true },
+      select: { id: true, status: true, amountMinor: true, currency: true, createdAt: true, providerReference: true, providerCode: true },
     });
     return {
       ok: true as const,
@@ -223,6 +223,8 @@ export async function listAppointmentPayments(db: PrismaClient, input: { appoint
         status: row.status,
         amount: formatMinorMoney(row.amountMinor, row.currency),
         when: formatPlatformWhen(row.createdAt),
+        reference: row.providerReference,
+        providerCode: row.providerCode,
       })),
     };
   } catch (error) {

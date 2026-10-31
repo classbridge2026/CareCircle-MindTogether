@@ -335,6 +335,7 @@ const appointmentSelect = {
   startsAt: true,
   endsAt: true,
   feeAmount: true,
+  feeAmountMinor: true,
   currency: true,
   paymentHoldExpiresAt: true,
   cancellationReason: true,
@@ -369,6 +370,7 @@ function presentAppointment(row: {
   startsAt: Date;
   endsAt: Date;
   feeAmount: { toString(): string };
+  feeAmountMinor: number;
   currency: string;
   paymentHoldExpiresAt: Date | null;
   cancellationReason: string | null;
@@ -410,6 +412,8 @@ function presentAppointment(row: {
     when: formatBookingWhen(row.startsAt),
     until: formatBookingWhen(row.endsAt),
     fee: formatFee(row.feeAmount.toString(), row.currency),
+    feeAmountMinor: row.feeAmountMinor,
+    currency: row.currency,
     paymentHoldExpiresAt: row.paymentHoldExpiresAt,
     cancellationReason: row.cancellationReason,
     patientConcern: row.patientConcern,

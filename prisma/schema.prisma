@@ -1342,3 +1342,20 @@ model AuditLog {
   @@index([action, occurredAt])
   @@index([requestId])
 }
+
+/// A public account-support request. The screenshot bytes stay off ordinary reads.
+model SupportRequest {
+  id              String    @id @default(uuid()) @db.Uuid
+  email           String    @db.VarChar(120)
+  category        String    @db.VarChar(40)
+  description     String    @db.VarChar(2000)
+  attachmentBytes Bytes?
+  attachmentMime  String?   @db.VarChar(40)
+  attachmentName  String?   @db.VarChar(80)
+  status          String    @default("OPEN") @db.VarChar(20)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(6)
+  reviewedAt      DateTime? @db.Timestamptz(6)
+
+  @@index([status, createdAt])
+  @@index([email, createdAt])
+}

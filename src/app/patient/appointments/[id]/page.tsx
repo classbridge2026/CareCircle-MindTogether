@@ -15,7 +15,12 @@ import { listAppointmentPayments, releasedSummaryForAppointment } from "@/lib/pa
 import { AppointmentOverview } from "@/components/consultation/overview";
 import { describeVisitJoin } from "@/lib/consultations/view";
 import { readPublicContact } from "@/lib/public/landing";
+import { afrimoneyConfigured, orangeConfigured } from "@/lib/payments/mobile-money";
+import { refreshVisitPayment } from "@/lib/payments/collect";
+import { afrimoneyDialHref, afrimoneySteps, loadAfrimoneyDialNumber } from "@/lib/payments/afrimoney-transfer";
+import { formatOrangeDialNumber, loadOrangeDialNumber, orangeDialHref, orangeTransferCode, ussdAmount } from "@/lib/payments/orange-transfer";
 import { CancelAppointmentForm } from "./cancel-form";
+import { VisitPayment } from "./pay-form";
 import "@/components/consultation/consult.css";
 import "./appointment-visit.css";
 
@@ -27,11 +32,21 @@ function durationLabel(startsAt: Date, endsAt: Date) {
   return `${minutes} min`;
 }
 
-export default async function PatientAppointmentPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PatientAppointmentPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ payment?: string }>;
+}) {
   const { id } = await params;
+  const query = await searchParams;
   const cookieStore = await cookies();
   const user = await readPageSession(prisma, cookieStore.get(SESSION_COOKIE)?.value, new Date());
   if (!user) return <RecordsUnavailable code="UNAVAILABLE" />;
+  if (query.payment === "return") {
+    await refreshVisitPayment({ actorUserId: user.id, appointmentId: id }, prisma).catch(() => undefined);
+  }
   const result = await loadOwnedAppointment(prisma, { id, userId: user.id, as: "patient" });
   if (!result.ok) {
     if (result.code === "NOT_FOUND") notFound();
@@ -76,6 +91,16 @@ export default async function PatientAppointmentPage({ params }: { params: Promi
 
   const holdOpen = visit.status === "PENDING_PAYMENT" && visit.paymentHoldExpiresAt && visit.paymentHoldExpiresAt > now;
   const paid = visit.paymentStatuses.includes("PAID");
+  const canPay = !paid && visit.feeAmountMinor > 0 && (visit.status === "CONFIRMED" || visit.status === "PENDING_PAYMENT");
+  const walletApi = canPay && (orangeConfigured() || afrimoneyConfigured());
+  const account = walletApi
+    ? await prisma.user.findUnique({ where: { id: user.id }, select: { phoneE164: true } }).catch(() => null)
+    : null;
+  const transferAmount = canPay && !walletApi ? ussdAmount(visit.feeAmountMinor) : null;
+  const [orangeDial, afriDial] = canPay && !walletApi
+    ? await Promise.all([loadOrangeDialNumber(prisma).catch(() => null), loadAfrimoneyDialNumber(prisma).catch(() => null)])
+    : [null, null];
+  const waiting = payments.ok ? payments.payments.find((payment) => payment.status === "REQUIRES_ACTION" || payment.status === "PENDING") : undefined;
   const online = visit.mode === "ONLINE";
   const join = describeVisitJoin({
     actorUserId: user.id,
@@ -92,6 +117,7 @@ export default async function PatientAppointmentPage({ params }: { params: Promi
     doctorDeletedAt: visit.doctor.deletedAt,
     doctorVerificationStatus: visit.doctor.verificationStatus,
     paymentStatuses: visit.paymentStatuses,
+    feeAmountMinor: visit.feeAmountMinor,
     when: visit.when,
     now,
     audience: "patient",
@@ -163,8 +189,28 @@ export default async function PatientAppointmentPage({ params }: { params: Promi
       <div className="visit-grid">
         <div className="grid gap-4">
           <section className="visit-panel">
-            <h2>Payment status</h2>
-            <p>{paid ? "A payment has been recorded for this visit." : visit.status === "PENDING_PAYMENT" ? "This visit is waiting on the recorded fee." : visit.status === "PENDING_APPROVAL" ? "The fee stays uncollected until the doctor approves this booking." : "The clinic has not collected this fee yet."}</p>
+            <VisitPayment
+              appointmentId={visit.id}
+              fee={visit.fee}
+              doctor={visit.doctor.displayName}
+              service={visit.service}
+              when={visit.when}
+              paid={paid}
+              canPay={canPay}
+              pendingApproval={visit.status === "PENDING_APPROVAL"}
+              walletApi={walletApi}
+              orange={orangeConfigured()}
+              afrimoney={afrimoneyConfigured()}
+              phone={account?.phoneE164 ?? ""}
+              dialNumber={orangeDial ? formatOrangeDialNumber(orangeDial) : null}
+              code={orangeDial && transferAmount ? orangeTransferCode(orangeDial, transferAmount) : null}
+              dialHref={orangeDial && transferAmount ? orangeDialHref(orangeDial, transferAmount) : null}
+              afriNumber={afriDial ? formatOrangeDialNumber(afriDial) : null}
+              afriSteps={afriDial && transferAmount ? afrimoneySteps(formatOrangeDialNumber(afriDial), transferAmount) : null}
+              afriHref={afrimoneyDialHref()}
+              waitingReference={waiting?.reference ?? null}
+              waitingWallet={waiting?.providerCode === "AFRIMONEY" ? "Afrimoney" : waiting ? "Orange Money" : null}
+            />
             {!payments.ok ? (
               <div className="mt-4"><RecordsUnavailable code={payments.code} /></div>
             ) : payments.payments.length === 0 ? (

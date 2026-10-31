@@ -27,8 +27,8 @@ export default async function PaymentsPage({ searchParams }: { searchParams: Pro
   if (!result.ok) return <RecordsUnavailable code={result.code} />;
   return (
     <main className="grid gap-6">
-      <PageHeader eyebrow="Operations" title="Payments" description="Payment records already stored for appointments. Nothing on this page marks a payment successful." />
-      <Notice>No payment provider is integrated. Provider-dependent capture, refund, and status updates are unavailable.</Notice>
+      <PageHeader eyebrow="Operations" title="Payments" description="Orange Money and Afrimoney transfers reported by patients. Open one to confirm the money arrived." />
+      <Notice>Patients send the fee from their own phones. Orange Money uses #144*2*1*the clinic number*amount*PIN#. Afrimoney uses *161#, then Transfer money, then the clinic Afrimoney number. Confirm a transfer only after that amount is on the matching clinic number. A refund is not sent from here.</Notice>
       <LiveQueryForm
         pathname="/admin/payments"
         className="grid gap-3 rounded-2xl border border-brand-line bg-white p-4 md:grid-cols-[minmax(0,1fr)_12rem_11rem] md:items-end"

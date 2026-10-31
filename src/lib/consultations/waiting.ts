@@ -59,6 +59,7 @@ const waitingSelect = {
       user: { select: { status: true, deletedAt: true } },
     },
   },
+  feeAmountMinor: true,
   payments: { select: { status: true } },
 } satisfies Prisma.AppointmentSelect;
 
@@ -84,6 +85,7 @@ function toAppointment(row: WaitingRow): ConsultationAppointment {
     doctorDeletedAt: row.doctor.user.deletedAt,
     doctorVerificationStatus: row.doctor.verificationStatus,
     paymentStatuses: row.payments.map((payment) => payment.status),
+    feeAmountMinor: row.feeAmountMinor,
   };
 }
 

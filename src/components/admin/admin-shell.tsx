@@ -44,6 +44,7 @@ const groups: Array<{ label: string; items: Item[] }> = [
       { href: "/admin/payments", label: "Payments", icon: "payment" },
       { href: "/admin/reconciliation", label: "Payment reconciliation", icon: "reconcile" },
       { href: "/admin/operations", label: "Operational issues", icon: "issue" },
+      { href: "/admin/support", label: "Account support", icon: "guide" },
     ],
   },
   {
@@ -77,6 +78,7 @@ const titles: Array<{ href: string; title: string; exact?: boolean }> = [
   { href: "/admin/payments", title: "Payments" },
   { href: "/admin/reconciliation", title: "Payment reconciliation" },
   { href: "/admin/operations", title: "Operational issues" },
+  { href: "/admin/support", title: "Account support" },
   { href: "/admin/profile", title: "Your photo" },
   { href: "/admin/notifications", title: "Notifications" },
   { href: "/admin/settings", title: "Platform settings" },

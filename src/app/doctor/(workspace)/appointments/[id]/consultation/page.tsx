@@ -129,6 +129,7 @@ export default async function DoctorConsultationPage({ params }: { params: Promi
     doctorDeletedAt: visit.doctor.deletedAt,
     doctorVerificationStatus: visit.doctor.verificationStatus,
     paymentStatuses: visit.paymentStatuses,
+    feeAmountMinor: visit.feeAmountMinor,
     when: visit.when,
     now,
     audience: "doctor",

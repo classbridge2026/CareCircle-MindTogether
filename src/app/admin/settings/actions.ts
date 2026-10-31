@@ -6,6 +6,9 @@ import { requireStoredRoles } from "@/lib/auth/require-role";
 import { updateDefaultCurrency } from "@/lib/catalog/configuration";
 import type { AdminActionState } from "@/lib/admin/action-state";
 import { updatePaymentHoldMinutes, updateSystemName } from "@/lib/admin/mutations";
+import { saveAfrimoneyReceiveNumber } from "@/lib/payments/afrimoney-transfer";
+import { saveOrangeReceiveNumber } from "@/lib/payments/orange-transfer";
+import { savePublicContact } from "@/lib/public/landing";
 import { prisma } from "@/lib/db/prisma";
 
 export async function updateCurrencySettingAction(_previous: AdminActionState, formData: FormData): Promise<AdminActionState> {
@@ -32,6 +35,50 @@ export async function updateSystemNameAction(_previous: AdminActionState, formDa
   revalidatePath("/login", "layout");
   revalidatePath("/register", "layout");
   return { message: result.message, tone: result.ok ? "ok" : "error" };
+}
+
+export async function updateOrangeNumberAction(_previous: AdminActionState, formData: FormData): Promise<AdminActionState> {
+  const user = await requireStoredRoles([ADMIN_ROLE_CODE, SUPER_ADMIN_ROLE_CODE]);
+  try {
+    const result = await saveOrangeReceiveNumber(String(formData.get("orangeNumber") ?? ""), prisma, user.id);
+    revalidatePath("/admin/settings");
+    revalidatePath("/patient/appointments", "layout");
+    return { message: result.message, tone: result.ok ? "ok" : "error" };
+  } catch {
+    return { message: "The Orange Money number could not be saved.", tone: "error" };
+  }
+}
+
+export async function updateAfrimoneyNumberAction(_previous: AdminActionState, formData: FormData): Promise<AdminActionState> {
+  const user = await requireStoredRoles([ADMIN_ROLE_CODE, SUPER_ADMIN_ROLE_CODE]);
+  try {
+    const result = await saveAfrimoneyReceiveNumber(String(formData.get("afrimoneyNumber") ?? ""), prisma, user.id);
+    revalidatePath("/admin/settings");
+    revalidatePath("/patient/appointments", "layout");
+    return { message: result.message, tone: result.ok ? "ok" : "error" };
+  } catch {
+    return { message: "The Afrimoney number could not be saved.", tone: "error" };
+  }
+}
+
+export async function updatePublicContactAction(_previous: AdminActionState, formData: FormData): Promise<AdminActionState> {
+  const user = await requireStoredRoles([ADMIN_ROLE_CODE, SUPER_ADMIN_ROLE_CODE]);
+  try {
+    const result = await savePublicContact(
+      {
+        email: String(formData.get("publicEmail") ?? ""),
+        phone: String(formData.get("publicPhone") ?? ""),
+        address: String(formData.get("publicAddress") ?? ""),
+      },
+      prisma,
+      user.id,
+    );
+    revalidatePath("/admin/settings");
+    revalidatePath("/");
+    return { message: result.message, tone: result.ok ? "ok" : "error" };
+  } catch {
+    return { message: "The public contact details could not be saved.", tone: "error" };
+  }
 }
 
 export async function updateHoldSettingAction(_previous: AdminActionState, formData: FormData): Promise<AdminActionState> {

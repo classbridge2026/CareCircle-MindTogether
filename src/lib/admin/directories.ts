@@ -6,6 +6,9 @@ import { readStoredSystemName, SYSTEM_NAME_SETTING_KEY } from "@/lib/brand/syste
 import { DEFAULT_CURRENCY_SETTING } from "@/lib/catalog/constants";
 import { IDENTITY_DOCUMENT_SETTING } from "@/lib/doctors/constants";
 import { isSchemaMismatch } from "@/lib/doctors/errors";
+import { AFRIMONEY_NUMBER_KEY, readStoredAfrimoneyNumber } from "@/lib/payments/afrimoney-transfer";
+import { ORANGE_MONEY_NUMBER_KEY, readStoredOrangeNumber } from "@/lib/payments/orange-transfer";
+import { PUBLIC_CONTACT_ADDRESS_KEY, PUBLIC_CONTACT_EMAIL_KEY, PUBLIC_CONTACT_PHONE_KEY } from "@/lib/public/landing";
 import { formatMinorMoney } from "./labels";
 import {
   ADMIN_PAGE_SIZE,
@@ -707,11 +710,20 @@ export async function loadPlatformSettings(db: PrismaClient) {
     const hold = byKey.get(HOLD_MINUTES_SETTING_KEY);
     const currencyValue = typeof currency?.valueJson === "string" ? currency.valueJson : "SLL";
     const holdValue = typeof hold?.valueJson === "number" ? hold.valueJson : null;
-    const knownKeys = new Set<string>([DEFAULT_CURRENCY_SETTING, HOLD_MINUTES_SETTING_KEY, SYSTEM_NAME_SETTING_KEY, SCREENING_SAFETY_SETTING, ...LOCKED_SETTINGS]);
+    const knownKeys = new Set<string>([DEFAULT_CURRENCY_SETTING, HOLD_MINUTES_SETTING_KEY, SYSTEM_NAME_SETTING_KEY, ORANGE_MONEY_NUMBER_KEY, AFRIMONEY_NUMBER_KEY, PUBLIC_CONTACT_EMAIL_KEY, PUBLIC_CONTACT_PHONE_KEY, PUBLIC_CONTACT_ADDRESS_KEY, SCREENING_SAFETY_SETTING, ...LOCKED_SETTINGS]);
+    const storedText = (key: string) => {
+      const value = byKey.get(key)?.valueJson;
+      return typeof value === "string" ? value : "";
+    };
     return {
       ok: true as const,
       currency: currencyValue,
       holdMinutes: holdValue,
+      orangeNumber: readStoredOrangeNumber(byKey.get(ORANGE_MONEY_NUMBER_KEY)?.valueJson),
+      afrimoneyNumber: readStoredAfrimoneyNumber(byKey.get(AFRIMONEY_NUMBER_KEY)?.valueJson),
+      publicEmail: storedText(PUBLIC_CONTACT_EMAIL_KEY),
+      publicPhone: storedText(PUBLIC_CONTACT_PHONE_KEY),
+      publicAddress: storedText(PUBLIC_CONTACT_ADDRESS_KEY),
       systemName: readStoredSystemName(byKey.get(SYSTEM_NAME_SETTING_KEY)?.valueJson),
       locked: LOCKED_SETTINGS.map((key) => ({
         key,

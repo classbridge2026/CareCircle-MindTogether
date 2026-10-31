@@ -592,6 +592,26 @@
   line-height: 1.35;
 }
 
+.settings-stat .stat-card:hover {
+  transform: none;
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.08);
+}
+
+.settings-stat .stat-card-value {
+  overflow: hidden;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-stat .stat-card-note {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 839px) {
   .admin-metrics .stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2483,8 +2503,9 @@ button.users-email {
 .home-legend {
   display: grid;
   align-content: center;
-  justify-self: end;
-  gap: 0.72rem;
+  justify-self: stretch;
+  gap: 0.55rem;
+  width: 100%;
   margin: 0;
   padding: 0;
   min-width: 0;
@@ -2493,16 +2514,17 @@ button.users-email {
 
 .home-legend li {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 0.55rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.55rem;
   min-width: 0;
 }
 
-.home-legend-copy {
-  display: grid;
-  gap: 0.08rem;
-  min-width: 0;
+.home-legend-count {
+  color: #6b7c93;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .home-feed li,
@@ -2521,7 +2543,18 @@ button.users-email {
   border-radius: 50%;
 }
 
-.home-legend strong,
+.home-legend strong {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #12304a;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .home-feed strong,
 .home-feed a,
 .home-bars span,
@@ -2746,14 +2779,16 @@ button.users-email {
   }
 }
 
-@container adminpage (max-width: 419px) {
+@container adminpage (max-width: 719px) {
   .home-status {
     grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 1rem;
   }
 
   .home-legend {
-    justify-self: end;
-    width: min(12.5rem, 100%);
+    justify-self: stretch;
+    width: 100%;
   }
 }
 

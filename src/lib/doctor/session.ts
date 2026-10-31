@@ -4,7 +4,7 @@ import { requireStoredRoles } from "@/lib/auth/require-role";
 import { prisma } from "@/lib/db/prisma";
 import { isRecordsOffline } from "@/lib/db/offline";
 import { isSchemaMismatch } from "@/lib/doctors/errors";
-import { redirect } from "next/navigation";
+import { redirectOffline } from "@/lib/db/offline-redirect";
 import { recentInAppNotices } from "@/lib/notifications/delivery";
 import { clinicalAccess, type ClinicalAccess } from "./present";
 
@@ -51,7 +51,7 @@ const loadDoctorAccount = cache(async () => {
       ? { id: profile.id, displayName: profile.displayName, verificationStatus: profile.verificationStatus }
       : null;
   } catch (error) {
-    if (isRecordsOffline(error)) redirect("/offline");
+    if (isRecordsOffline(error)) await redirectOffline();
     if (!isSchemaMismatch(error)) throw error;
     access = "schema";
   }

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CareCircleMark } from "@/components/brand";
+import { SupportRequestForm } from "@/components/support/support-form";
 import { getSystemName } from "@/lib/brand/system-name";
 
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemName();
   return {
-    title: "Contact Support",
-    description: `Get help with a ${systemName} account.`,
+    title: "Account support",
+    description: `Send an account support request to ${systemName}.`,
   };
 }
 
@@ -19,18 +20,14 @@ export default async function SupportPage() {
         <CareCircleMark className="h-9 w-9" />
         <span className="text-sm font-medium tracking-[0.16em] text-brand-teal uppercase">{systemName}</span>
       </Link>
-      <h1 className="text-3xl font-semibold tracking-tight">Contact Support</h1>
-      <p className="leading-7">
-        For help signing in, use Forgot password on the sign-in page. For other account questions, contact your {systemName} clinic administrator.
-      </p>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link href="/login" className="text-sm font-semibold text-brand-teal underline">
-          Back to sign in
-        </Link>
-        <Link href="/forgot-password" className="text-sm font-semibold text-brand-teal underline">
-          Forgot password
-        </Link>
+      <h1 className="text-3xl font-semibold tracking-tight">Account support</h1>
+      <p className="leading-7">Use the email on the account. If you are locked out, use an email where an administrator can reply.</p>
+      <div className="rounded-2xl border border-brand-line bg-white p-5 shadow-sm sm:p-6">
+        <SupportRequestForm />
       </div>
+      <Link href="/login" className="text-sm font-semibold text-brand-teal underline">
+        Back to sign in
+      </Link>
     </main>
   );
 }

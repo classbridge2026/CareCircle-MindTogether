@@ -71,6 +71,7 @@ export default async function PatientConsultationPage({
     doctorDeletedAt: visit.doctor.deletedAt,
     doctorVerificationStatus: visit.doctor.verificationStatus,
     paymentStatuses: visit.paymentStatuses,
+    feeAmountMinor: visit.feeAmountMinor,
     when: visit.when,
     now,
     audience: "patient",

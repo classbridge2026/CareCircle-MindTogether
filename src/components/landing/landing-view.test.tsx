@@ -44,9 +44,8 @@ describe("public landing page", () => {
     const markup = container.innerHTML;
 
     expect(screen.getByRole("heading", { level: 1, name: "Healthcare That Puts You First." })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Care for Your Health, Every Step of the Way." })).toBeTruthy();
-    expect(markup).toContain("More healthcare specialties are planned for future expansion.");
-    expect(markup).toContain("No doctor offering is open for booking yet.");
+    expect(screen.getByRole("heading", { name: "Consultation services" })).toBeTruthy();
+    expect(markup).not.toContain("Open offerings");
     expect(markup).toContain("No consultation services are available to book yet.");
     expect(markup).toContain("No approved doctors are available to feature yet.");
     expect(markup).toContain("Public contact details have not been configured yet.");
@@ -87,6 +86,8 @@ describe("public landing page", () => {
               description: "A first visit.",
               modes: ["IN_PERSON"],
               bookable: true,
+              durationLabel: "45 min",
+              fee: "SLL 450 / session",
             },
           ],
           offerings: [
@@ -129,17 +130,14 @@ describe("public landing page", () => {
     expect(screen.getByText("Verified")).toBeTruthy();
     expect(screen.getByText("Languages: English")).toBeTruthy();
     expect(screen.getByText("Services: Initial consultation")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Open offerings" })).toBeTruthy();
-    expect(screen.getByText("Mental Health")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Open offerings" })).toBeNull();
+    expect(screen.queryByText("Mental Health")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Book with this doctor" })).toBeNull();
     expect(screen.getByText("45 min")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Book with this doctor" }).getAttribute("href")).toBe(
-      "/patient/doctors/33333333-3333-4333-8333-333333333333",
-    );
-    expect(screen.getByRole("link", { name: "Book this service" }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: "Book now" }).getAttribute("href")).toBe(
       "/patient/find?service=22222222-2222-4222-8222-222222222222",
     );
-    expect(screen.getByText("Online & In-Person")).toBeTruthy();
-    expect(screen.getAllByText("SLL 450 / session").length).toBeGreaterThan(0);
+    expect(screen.getByText("Online & In-Person · SLL 450 / session")).toBeTruthy();
     expect(screen.queryByText(/reviews/i)).toBeNull();
     expect(screen.getAllByRole("link", { name: "care@example.com" }).length).toBeGreaterThan(0);
     expect(screen.queryByText(/licence/i)).toBeNull();

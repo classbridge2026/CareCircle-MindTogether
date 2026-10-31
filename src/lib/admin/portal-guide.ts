@@ -250,7 +250,7 @@ const TOPICS: GuideTopic[] = [
     keywords: ["appointment", "appointments", "booking", "bookings", "visit", "visits", "cancel", "slot"],
     summary: "Appointments lists booked visits. Filter by patient, status, online or in person, and date. You can open a visit and cancel it. Patients create the booking.",
     canDo: ["Search appointments.", "Filter pending payment holds and expired unpaid bookings.", "Open a visit.", "Cancel a booking.", "Jump here from the dashboard's today card."],
-    how: ["A doctor cannot have two occupying appointments in the same time range. Occupying statuses are pending payment, confirmed, checked in, and in progress. The database enforces that rule.", "A new booking can sit in a payment hold. The hold length is set under Platform settings, from 5 to 120 minutes, and defaults to 10.", "When the hold expires unpaid, the slot is released. Operational issues can process those expired holds.", "Cancelling writes the appointment change. It does not invent a refund. No payment provider is integrated."],
+    how: ["A doctor cannot have two occupying appointments in the same time range. Occupying statuses are pending payment, confirmed, checked in, and in progress. The database enforces that rule.", "A new booking can sit in a payment hold. The hold length is set under Platform settings, from 5 to 120 minutes, and defaults to 10.", "When the hold expires unpaid, the slot is released. Operational issues can process those expired holds.", "Cancelling writes the appointment change. It does not send a refund. Patients pay an approved visit by Orange Money transfer to the number saved under Platform settings."],
     limits: ["This page does not create a booking for a patient and does not mark a payment successful."],
     actions: [
       { verbs: ["cancel"], text: "Open the appointment and cancel it. The stored visit is updated. A refund is not sent because no payment provider is connected." },
@@ -265,12 +265,12 @@ const TOPICS: GuideTopic[] = [
     group: "Operations",
     aliases: ["payment", "payments", "payer"],
     keywords: ["payment", "payments", "paid", "payer", "refund"],
-    summary: "Payments lists the payment records already stored for appointments. You can search and open one. Nothing on this page marks a payment successful.",
-    canDo: ["Search by patient, payer, reference, or appointment.", "Filter by status and date.", "Open a payment and read the stored status."],
-    how: ["No payment provider is integrated, so capture, refund, and provider status updates are unavailable.", "A sent or stored status is the record in the database, not a new charge made from this page.", "Mismatches are reviewed on Payment reconciliation."],
-    limits: ["You cannot mark a payment paid, capture it, or refund it from the portal."],
+    summary: "Payments lists Orange Money and Afrimoney transfers patients have reported. Open a transfer and confirm it only after the amount is on the matching clinic number.",
+    canDo: ["Search by patient, payer, reference, or appointment.", "Filter by status and date.", "Open a reported transfer and confirm or reject it."],
+    how: ["Patients dial #144*2*1*the clinic number*amount*PIN# on their own phones. The PIN is never entered in CareCircle.", "The clinic number is saved under Platform settings.", "Confirm the transfer on its payment page after you see the money. Reject it if it did not arrive. This page does not send a refund."],
+    limits: ["You cannot confirm a payment that has no Orange Money transaction code.", "You cannot type a patient's PIN or send a refund from the portal."],
     actions: [
-      { verbs: ["refund", "capture", "mark"], text: "Those actions are unavailable until a payment provider is integrated. You can only review the stored record." },
+      { verbs: ["refund", "capture", "mark"], text: "Open the payment. Confirm it when the Orange Money transfer has arrived, or reject it if it has not. A refund is not sent." },
     ],
     prompts: ["Can I mark a payment successful?", "Where do I see payment problems?"],
   },
@@ -305,6 +305,22 @@ const TOPICS: GuideTopic[] = [
     prompts: ["What are operational issues?", "How do I clear an expired payment hold?"],
   },
   {
+    id: "support",
+    title: "Account support",
+    href: "/admin/support",
+    group: "Operations",
+    aliases: ["account support", "support request", "support requests", "support ticket"],
+    keywords: ["request", "requests", "ticket", "tickets", "locked", "screenshot"],
+    summary: "Account support lists requests people send from the public homepage. Each request has an email, an issue category, a description, and an optional screenshot.",
+    canDo: ["Read a request.", "Open the screenshot when one was attached.", "Mark an open request reviewed."],
+    how: ["People submit the form on the homepage Account support section, or on the account support page.", "Open requests are listed before reviewed ones.", "Mark reviewed records that an administrator has read the request. It does not email the person."],
+    limits: ["The form does not reset a password or unlock an account by itself."],
+    actions: [
+      { verbs: ["read", "review", "open"], text: "On Account support, open the request, read the description, and mark it reviewed when you have seen it." },
+    ],
+    prompts: ["Where do account support requests go?", "How do I review a support request?"],
+  },
+  {
     id: "notifications",
     title: "Notifications",
     href: "/admin/notifications",
@@ -328,8 +344,8 @@ const TOPICS: GuideTopic[] = [
     group: "Platform management",
     aliases: ["platform settings", "settings", "system name", "payment hold", "currency setting"],
     keywords: ["settings", "setting", "name", "currency", "hold", "smtp", "timezone"],
-    summary: "Platform settings changes only the values the application already reads: the system name, the default currency for new prices, and the payment-hold minutes.",
-    canDo: ["Rename the system. The name appears in the header.", "Set the default currency for new catalog prices.", "Set the payment hold between 5 and 120 minutes.", "Read whether email delivery is configured.", "Open Catalog status for active specialties, services, and locations."],
+    summary: "Platform settings changes the system name, the public contact details, the default currency for new prices, the Orange Money and Afrimoney numbers that receive visit payments, and the payment-hold minutes.",
+    canDo: ["Rename the system. The name appears in the header.", "Save the public email, phone, and address shown on the homepage.", "Set the default currency for new catalog prices.", "Save the Orange Money number patients pay.", "Save the Afrimoney number patients pay from *161#.", "Set the payment hold between 5 and 120 minutes.", "Read whether email delivery is configured.", "Open Catalog status for active specialties, services, and locations."],
     how: ["New accounts default to Africa/Freetown. Changing nothing here rewrites a doctor's availability timezone.", "Booked appointments keep the fee they were given when the currency default changes.", "Email is configured with SMTP variables outside this page. Secrets are not listed.", "Minor registration, minor treatment, and the doctor identity-document requirement are locked. This page shows them and does not change them.", "A doctor cannot have two occupying appointments at once. That rule is in the database, not a setting."],
     limits: ["Environment secrets, SMTP passwords, and payment-provider keys are not edited here."],
     actions: [
@@ -512,7 +528,7 @@ function overview(setup: boolean): GuideReply {
     ],
     steps: setup
       ? [
-          "Platform settings: save the system name, the default currency, and the payment hold.",
+          "Platform settings: save the system name, the default currency, the Orange Money and Afrimoney numbers, and the payment hold.",
           "Specialties, consultation services, and a verified location.",
           "Doctor verification: approve a submitted doctor.",
           "Doctor offerings and Fees and pricing: assign the service and the doctor's fee.",
@@ -522,7 +538,7 @@ function overview(setup: boolean): GuideReply {
       : [
           "People and access: users, patients, doctors, administrator roles, and doctor verification.",
           "Healthcare configuration: specialties, consultation services, doctor offerings, fees, mapped locations, and screening.",
-          "Operations: appointments, stored payments, reconciliation exceptions, and operational issues.",
+          "Operations: appointments, stored payments, reconciliation exceptions, operational issues, and account support requests.",
           "Platform management: your inbox and the delivery log, settings, audit logs, and date-range reports.",
           "A visit needs an approved doctor, an offering, a fee, and a location when it is in person. Screening is a separate patient questionnaire.",
         ],

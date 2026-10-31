@@ -1,0 +1,210 @@
+import { PaymentStatus, type PrismaClient } from "@prisma/client";
+import { parseUuid } from "@/lib/catalog/rules";
+import { isUniqueConflict } from "@/lib/doctors/errors";
+import { confirmVerifiedPayment } from "@/lib/appointments/payment-holds";
+import { AFRIMONEY, normalizeSierraLeoneMsisdn } from "./mobile-money";
+import { nextProviderPaymentStatus, paymentAmountsMatch } from "./verification";
+
+export const ORANGE_MONEY_NUMBER_KEY = "ORANGE_MONEY_NUMBER";
+const ORANGE_MONEY = "ORANGE_MONEY";
+
+type Db = PrismaClient;
+
+export function orangeDialNumber(input: string): string | null {
+  const msisdn = normalizeSierraLeoneMsisdn(input);
+  if (!msisdn) return null;
+  return `0${msisdn.slice(3)}`;
+}
+
+export function formatOrangeDialNumber(dialNumber: string) {
+  return dialNumber.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
+}
+
+/** Whole leones when the fee has no cents. Orange Money dials this amount. */
+export function ussdAmount(minor: number): string | null {
+  if (!Number.isSafeInteger(minor) || minor <= 0) return null;
+  if (minor % 100 === 0) return String(minor / 100);
+  return `${Math.floor(minor / 100)}.${String(minor % 100).padStart(2, "0")}`;
+}
+
+export function orangeTransferCode(dialNumber: string, amount: string) {
+  return `#144*2*1*${dialNumber}*${amount}*PIN#`;
+}
+
+export function orangeDialHref(dialNumber: string, amount: string) {
+  return `tel:${encodeURIComponent(`#144*2*1*${dialNumber}*${amount}*`)}`;
+}
+
+/** The code from the Orange Money SMS. A 4-digit PIN is rejected. */
+export function parseOrangeTransactionId(input: string): string | null {
+  const value = input.trim().toUpperCase().replace(/\s+/g, "");
+  if (!/^[A-Z0-9][A-Z0-9.-]{5,39}$/.test(value)) return null;
+  if (/^\d{4}$/.test(value)) return null;
+  return value;
+}
+
+export function readStoredOrangeNumber(value: unknown): string | null {
+  return typeof value === "string" ? orangeDialNumber(value) : null;
+}
+
+export async function loadOrangeDialNumber(db: Db): Promise<string | null> {
+  const row = await db.platformSetting.findUnique({ where: { key: ORANGE_MONEY_NUMBER_KEY }, select: { valueJson: true } });
+  return readStoredOrangeNumber(row?.valueJson);
+}
+
+export async function saveOrangeReceiveNumber(input: string, db: Db, actorUserId: string) {
+  const dial = orangeDialNumber(input);
+  if (!dial) return { ok: false as const, message: "Enter the Sierra Leone Orange Money number that should receive visit payments." };
+  const stored = `232${dial.slice(1)}`;
+  await db.$transaction(async (tx) => {
+    const saved = await tx.platformSetting.upsert({
+      where: { key: ORANGE_MONEY_NUMBER_KEY },
+      create: { key: ORANGE_MONEY_NUMBER_KEY, valueJson: stored },
+      update: { valueJson: stored },
+    });
+    await tx.auditLog.create({
+      data: {
+        actorUserId,
+        action: "settings.orange_number_updated",
+        entityType: "PlatformSetting",
+        entityId: saved.id,
+        metadata: { orangeNumber: dial },
+      },
+    });
+  });
+  return { ok: true as const, message: `Visit payments now show Orange Money ${formatOrangeDialNumber(dial)}.`, dial };
+}
+
+export async function reportOrangeTransfer(
+  input: { actorUserId: string; appointmentId: string; reference: string },
+  db: Db,
+): Promise<{ message: string; tone?: "ok" | "error" }> {
+  const appointmentId = parseUuid(input.appointmentId);
+  const reference = parseOrangeTransactionId(input.reference);
+  if (!appointmentId) return { message: "This visit could not be found.", tone: "error" };
+  if (!reference) return { message: "Enter the transaction code from the Orange Money SMS. Do not enter your PIN.", tone: "error" };
+  const dial = await loadOrangeDialNumber(db);
+  if (!dial) return { message: "The clinic has not saved an Orange Money number yet.", tone: "error" };
+
+  const appointment = await db.appointment.findFirst({
+    where: { id: appointmentId, patient: { userId: input.actorUserId } },
+    select: { id: true, status: true, feeAmountMinor: true, currency: true },
+  });
+  if (!appointment) return { message: "This visit could not be found.", tone: "error" };
+  if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING_PAYMENT") {
+    return { message: "Pay after the doctor approves the visit.", tone: "error" };
+  }
+  if (appointment.feeAmountMinor <= 0) return { message: "This visit does not have a fee.", tone: "error" };
+
+  const existing = await db.payment.findFirst({
+    where: { appointmentId, status: { in: [PaymentStatus.PAID, PaymentStatus.REQUIRES_ACTION, PaymentStatus.PENDING] } },
+    select: { status: true },
+  });
+  if (existing?.status === "PAID") return { message: "This visit is already paid.", tone: "ok" };
+  if (existing) return { message: "This transfer is already waiting for the clinic to confirm it.", tone: "ok" };
+
+  try {
+    await db.payment.create({
+      data: {
+        appointmentId,
+        payerUserId: input.actorUserId,
+        amountMinor: appointment.feeAmountMinor,
+        currency: appointment.currency,
+        status: PaymentStatus.REQUIRES_ACTION,
+        providerCode: ORANGE_MONEY,
+        providerReference: reference,
+        providerAccountId: `232${dial.slice(1)}`,
+        events: {
+          create: {
+            providerCode: ORANGE_MONEY,
+            providerEventId: `reported:${reference}`,
+            status: PaymentStatus.REQUIRES_ACTION,
+            payloadSummary: { source: "orange_ussd", reference },
+          },
+        },
+      },
+    });
+  } catch (error) {
+    if (isUniqueConflict(error)) return { message: "That Orange Money transaction code is already recorded.", tone: "error" };
+    throw error;
+  }
+  return { message: "The clinic will confirm this Orange Money transfer.", tone: "ok" };
+}
+
+const CONFIRMABLE_VISIT = new Set(["CONFIRMED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"]);
+
+export async function reviewOrangeTransfer(
+  input: { actorUserId: string; paymentId: string; decision: "confirm" | "reject" },
+  db: Db,
+): Promise<{ message: string; tone: "ok" | "error" }> {
+  const paymentId = parseUuid(input.paymentId);
+  if (!paymentId) return { message: "That payment was not found.", tone: "error" };
+  const payment = await db.payment.findUnique({
+    where: { id: paymentId },
+    select: {
+      id: true,
+      status: true,
+      providerCode: true,
+      providerReference: true,
+      amountMinor: true,
+      currency: true,
+      appointmentId: true,
+      appointment: { select: { status: true, feeAmountMinor: true, currency: true, paymentHoldExpiresAt: true } },
+    },
+  });
+  const phoneTransfer = payment?.providerCode === ORANGE_MONEY || payment?.providerCode === AFRIMONEY;
+  if (!payment || !phoneTransfer || !payment.providerReference) {
+    return { message: "That phone transfer was not found.", tone: "error" };
+  }
+  const wallet = payment.providerCode === AFRIMONEY ? "Afrimoney" : "Orange Money";
+  if (payment.status === "PAID" && input.decision === "confirm") return { message: "This payment is already confirmed.", tone: "ok" };
+  const incoming = input.decision === "confirm" ? "PAID" : "FAILED";
+  const next = nextProviderPaymentStatus(payment.status, incoming);
+  if ("rejected" in next || !next.changed) return { message: "This payment can no longer be changed.", tone: "error" };
+  if (
+    !paymentAmountsMatch({
+      paymentAmountMinor: payment.amountMinor,
+      appointmentFeeMinor: payment.appointment.feeAmountMinor,
+      paymentCurrency: payment.currency,
+      appointmentCurrency: payment.appointment.currency,
+    })
+  ) {
+    return { message: "The transfer amount does not match the visit fee.", tone: "error" };
+  }
+
+  if (input.decision === "confirm" && payment.appointment.status === "PENDING_PAYMENT") {
+    const confirmed = await confirmVerifiedPayment({ appointmentId: payment.appointmentId, paymentId: payment.id }, db);
+    if (!confirmed.ok) return { message: "The payment hold has closed, so this visit was not confirmed.", tone: "error" };
+    return { message: `The ${wallet} transfer is confirmed and the visit is booked.`, tone: "ok" };
+  }
+  if (input.decision === "confirm" && !CONFIRMABLE_VISIT.has(payment.appointment.status)) {
+    return { message: "This visit is not waiting for a payment.", tone: "error" };
+  }
+
+  const afri = payment.providerCode === AFRIMONEY;
+  await db.payment.update({ where: { id: payment.id }, data: { status: next.status as PaymentStatus } });
+  await db.paymentEvent.create({
+    data: {
+      paymentId: payment.id,
+      providerCode: payment.providerCode,
+      providerEventId: `${input.decision}:${payment.id}`,
+      status: next.status as PaymentStatus,
+      payloadSummary: { source: "clinic_review" },
+    },
+  });
+  await db.auditLog.create({
+    data: {
+      actorUserId: input.actorUserId,
+      action: input.decision === "confirm"
+        ? afri ? "payment.afrimoney_confirmed" : "payment.orange_confirmed"
+        : afri ? "payment.afrimoney_rejected" : "payment.orange_rejected",
+      entityType: "Payment",
+      entityId: payment.id,
+      metadata: { appointmentId: payment.appointmentId },
+    },
+  });
+  return {
+    message: input.decision === "confirm" ? `The ${wallet} transfer is confirmed.` : "The transfer was not accepted. The patient can send it again.",
+    tone: "ok",
+  };
+}

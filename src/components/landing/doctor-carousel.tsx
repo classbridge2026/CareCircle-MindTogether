@@ -25,33 +25,32 @@ function DoctorCard({ doctor }: { doctor: PublicDoctor }) {
   const visits = visitLabel(doctor.consultationTypes);
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#d7e6f2] bg-white shadow-[0_10px_30px_rgba(18,48,74,0.08)]">
-      <div className="relative aspect-[4/3] bg-gradient-to-b from-[#e7f3f8] to-[#d5ebe8]">
+      <div className="relative h-28 bg-gradient-to-b from-[#e7f3f8] to-[#d5ebe8] sm:h-32">
         {doctor.photo ? (
-          <img className="absolute inset-0 h-full w-full object-cover" src={profileImageSrc(doctor.photo.userId, doctor.photo.version)} alt="" />
+          <img className="absolute inset-0 h-full w-full object-cover object-top" src={profileImageSrc(doctor.photo.userId, doctor.photo.version)} alt="" />
         ) : (
-          <p className="absolute inset-0 flex items-center justify-center text-4xl font-semibold tracking-tight text-brand-navy" aria-hidden="true">
+          <p className="absolute inset-0 flex items-center justify-center text-2xl font-semibold tracking-tight text-brand-navy" aria-hidden="true">
             {initials(doctor.displayName)}
           </p>
         )}
-        <p className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#178a4a] shadow-sm">
-          <span aria-hidden="true" className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#178a4a] text-[10px] text-white">
+        <p className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#178a4a] shadow-sm">
+          <span aria-hidden="true" className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#178a4a] text-[9px] text-white">
             ✓
           </span>
           Verified
         </p>
       </div>
-      <div className="flex flex-1 flex-col px-4 pt-4 pb-4">
-        <h3 className="text-base font-semibold break-words text-brand-navy">{doctor.displayName}</h3>
-        <p className="mt-1 text-sm text-brand-muted">{role}</p>
-        <ul className="mt-3 grid gap-1.5 text-sm text-brand-ink">
-          {doctor.services.length > 0 ? <li>Services: {doctor.services.join(", ")}</li> : null}
-          {doctor.languages.length > 0 ? <li>Languages: {doctor.languages.join(", ")}</li> : null}
-          {visits ? <li>{visits}</li> : null}
-          {doctor.sessionFee ? <li>{doctor.sessionFee}</li> : null}
-        </ul>
+      <div className="flex flex-1 flex-col px-3.5 pt-3 pb-3">
+        <h3 className="truncate text-base font-semibold text-brand-navy">{doctor.displayName}</h3>
+        <p className="mt-0.5 truncate text-sm text-brand-muted">{role}</p>
+        {visits || doctor.sessionFee ? (
+          <p className="mt-2 truncate text-xs font-semibold text-brand-navy">{[visits, doctor.sessionFee].filter(Boolean).join(" · ")}</p>
+        ) : null}
+        {doctor.services.length > 0 ? <p className="mt-1 truncate text-xs text-brand-ink">Services: {doctor.services.join(", ")}</p> : null}
+        {doctor.languages.length > 0 ? <p className="mt-0.5 truncate text-xs text-brand-muted">Languages: {doctor.languages.join(", ")}</p> : null}
         <Link
           href={`/patient/doctors/${doctor.id}`}
-          className={`mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand-navy text-sm font-semibold text-white hover:bg-[#0c2438] ${focusRing}`}
+          className={`mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg bg-brand-navy text-sm font-semibold text-white hover:bg-[#0c2438] ${focusRing}`}
         >
           Book Appointment
         </Link>
@@ -97,7 +96,7 @@ export function DoctorCarousel({ doctors }: { doctors: PublicDoctor[] }) {
         className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-1 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {doctors.map((doctor) => (
-          <li key={doctor.id} className="w-[85%] shrink-0 snap-start sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.7rem)] xl:w-[calc(25%-0.75rem)]">
+          <li key={doctor.id} className="w-60 shrink-0 snap-start sm:w-64">
             <DoctorCard doctor={doctor} />
           </li>
         ))}

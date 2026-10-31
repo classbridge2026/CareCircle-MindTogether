@@ -42,6 +42,7 @@ function row(overrides: Record<string, unknown> = {}) {
     consultationService: { name: "Review", preparationInstructions: "Find a quiet room." },
     offering: { notes: null },
     location: null,
+    feeAmountMinor: 5000,
     payments: [{ status: "PAID" }],
     ...overrides,
   };

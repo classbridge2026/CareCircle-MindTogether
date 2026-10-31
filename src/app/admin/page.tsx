@@ -62,11 +62,9 @@ export default async function AdminDashboardPage() {
               {home.statuses.map((slice) => (
                 <li key={slice.key}>
                   <span className="home-dot" style={{ background: slice.color }} />
-                  <span className="home-legend-copy">
-                    <strong>{slice.label}</strong>
-                    <span>
-                      {slice.count} ({home.appointmentTotal === 0 ? "0%" : `${((slice.count / home.appointmentTotal) * 100).toFixed(1)}%`})
-                    </span>
+                  <strong>{slice.label}</strong>
+                  <span className="home-legend-count">
+                    {slice.count} ({home.appointmentTotal === 0 ? "0%" : `${((slice.count / home.appointmentTotal) * 100).toFixed(1)}%`})
                   </span>
                 </li>
               ))}

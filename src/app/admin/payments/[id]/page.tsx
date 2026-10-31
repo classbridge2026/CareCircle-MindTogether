@@ -10,6 +10,7 @@ import { requireStoredRoles } from "@/lib/auth/require-role";
 import { loadPaymentDetail } from "@/lib/admin/directories";
 import { appointmentStatusLabel, formatPlatformWhen, paymentStatusLabel, paymentStatusTone, reconciliationLabel } from "@/lib/admin/labels";
 import { prisma } from "@/lib/db/prisma";
+import { OrangeReviewForm } from "./review-form";
 
 export const metadata: Metadata = { title: "Payment" };
 export const dynamic = "force-dynamic";
@@ -26,7 +27,11 @@ export default async function PaymentDetailPage({ params }: { params: Promise<{ 
   return (
     <main className="grid gap-6">
       <PageHeader eyebrow="Operations" title={payment.amount} description={`${payment.payer.email} · ${payment.providerCode}`} />
-      <Notice>Recording a successful payment from this screen is unavailable. Status follows a verified provider event, and no provider is integrated.</Notice>
+      {payment.status === "REQUIRES_ACTION" && (payment.providerCode === "ORANGE_MONEY" || payment.providerCode === "AFRIMONEY") && payment.providerReference ? (
+        <OrangeReviewForm paymentId={payment.id} reference={payment.providerReference} wallet={payment.providerCode === "AFRIMONEY" ? "Afrimoney" : "Orange Money"} />
+      ) : (
+        <Notice>Confirm a phone transfer only after the patient has submitted the SMS transaction code and the amount is on the clinic number.</Notice>
+      )}
       {payment.flags.length > 0 ? (
         <Notice>
           {payment.flags.map((flag) => reconciliationLabel(flag)).join(" ")} A late payment does not confirm an appointment whose slot was released.

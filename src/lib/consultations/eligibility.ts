@@ -62,6 +62,7 @@ export type ConsultationAppointment = {
   doctorDeletedAt: Date | null;
   doctorVerificationStatus: string;
   paymentStatuses: string[];
+  feeAmountMinor: number;
 };
 
 export function consultationRoomName(appointmentId: string): string | null {
@@ -84,10 +85,10 @@ export function appointmentStatusAfterDisconnect(status: string): string {
   return status;
 }
 
-export function paymentAllowsConsultation(status: string, paymentStatuses: string[]): boolean {
+export function paymentAllowsConsultation(status: string, paymentStatuses: string[], feeAmountMinor: number): boolean {
   if (status === "PENDING_PAYMENT" || status === "EXPIRED_UNPAID") return false;
   if (!JOINABLE.has(status)) return false;
-  if (paymentStatuses.length === 0) return true;
+  if (!Number.isSafeInteger(feeAmountMinor) || feeAmountMinor <= 0) return feeAmountMinor === 0;
   return paymentStatuses.includes("PAID");
 }
 
@@ -128,12 +129,12 @@ export function joinDecision(input: {
   if (status === "NO_SHOW") return { ok: false, code: "NO_SHOW" };
   if (status === "RESCHEDULED") return { ok: false, code: "RESCHEDULED" };
   if (!JOINABLE.has(status)) return { ok: false, code: "UNSUPPORTED" };
-  if (!paymentAllowsConsultation(status, input.appointment.paymentStatuses)) return { ok: false, code: "PAYMENT" };
 
-  const opensAt = input.appointment.startsAt.getTime() - input.joinWindowMinutes * 60_000;
-  if (input.now.getTime() < opensAt) return { ok: false, code: "TOO_EARLY" };
   const closesAt = input.appointment.endsAt.getTime() + input.rejoinGraceMinutes * 60_000;
   if (input.now.getTime() > closesAt) return { ok: false, code: "EXPIRED" };
+  if (!paymentAllowsConsultation(status, input.appointment.paymentStatuses, input.appointment.feeAmountMinor)) return { ok: false, code: "PAYMENT" };
+  const opensAt = input.appointment.startsAt.getTime() - input.joinWindowMinutes * 60_000;
+  if (input.now.getTime() < opensAt) return { ok: false, code: "TOO_EARLY" };
   return { ok: true, role };
 }
 

@@ -34,6 +34,8 @@ export type PublicService = {
   description: string | null;
   bookable: boolean;
   modes: Array<"ONLINE" | "IN_PERSON">;
+  durationLabel: string | null;
+  fee: string | null;
 };
 
 export type PublicDoctor = {
@@ -88,6 +90,77 @@ function storedString(value: Prisma.JsonValue | undefined): string | null {
   return typeof value === "string" ? cleanText(value) : null;
 }
 
+export function normalizePublicContact(input: { email: string; phone: string; address: string }):
+  | { ok: true; email: string | null; phone: string | null; address: string | null }
+  | { ok: false; message: string } {
+  const email = cleanText(input.email);
+  const phone = cleanText(input.phone);
+  const address = cleanText(input.address);
+  if (email && (email.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+    return { ok: false, message: "Enter a valid public email address, up to 120 characters." };
+  }
+  if (phone && !/^\+?[0-9][0-9\s().-]{6,22}$/.test(phone)) {
+    return { ok: false, message: "Enter a public phone number, such as +232 76 000 000." };
+  }
+  if (address && (address.length < 5 || address.length > 200)) {
+    return { ok: false, message: "Enter a public address between 5 and 200 characters, or leave it blank." };
+  }
+  return { ok: true, email, phone, address };
+}
+
+export async function savePublicContact(
+  input: { email: string; phone: string; address: string },
+  db: PrismaClient,
+  actorUserId: string,
+) {
+  const parsed = normalizePublicContact(input);
+  if (!parsed.ok) return parsed;
+  const fields = [
+    [PUBLIC_CONTACT_EMAIL_KEY, parsed.email],
+    [PUBLIC_CONTACT_PHONE_KEY, parsed.phone],
+    [PUBLIC_CONTACT_ADDRESS_KEY, parsed.address],
+  ] as const;
+  await db.$transaction(async (tx) => {
+    const prior = await tx.platformSetting.findFirst({
+      where: { key: { in: fields.map(([key]) => key) } },
+      select: { id: true },
+    });
+    let entityId = prior?.id ?? actorUserId;
+    for (const [key, value] of fields) {
+      if (!value) {
+        await tx.platformSetting.deleteMany({ where: { key } });
+        continue;
+      }
+      const saved = await tx.platformSetting.upsert({
+        where: { key },
+        create: { key, valueJson: value },
+        update: { valueJson: value },
+      });
+      entityId = saved.id;
+    }
+    await tx.auditLog.create({
+      data: {
+        actorUserId,
+        action: "settings.public_contact_updated",
+        entityType: "PlatformSetting",
+        entityId,
+        metadata: {
+          email: Boolean(parsed.email),
+          phone: Boolean(parsed.phone),
+          address: Boolean(parsed.address),
+        },
+      },
+    });
+  });
+  const shown = [parsed.email, parsed.phone, parsed.address].filter(Boolean).length;
+  return {
+    ok: true as const,
+    message: shown === 0
+      ? "Public contact details were cleared. The homepage notice stays until an email, phone, or address is saved."
+      : "Public contact details are saved. The homepage shows the email, phone, and address that were filled in.",
+  };
+}
+
 export function readPublicContact(rows: { key: string; valueJson: Prisma.JsonValue }[]): PublicContact {
   const byKey = new Map(rows.map((row) => [row.key, row.valueJson]));
   const email = storedString(byKey.get(PUBLIC_CONTACT_EMAIL_KEY));
@@ -110,6 +183,14 @@ export function formatQualification(
   const yearOk = typeof input.year === "number" && input.year >= 1940 && input.year <= nowYear + 1;
   const line = institution ? `${title}, ${institution}` : title;
   return yearOk ? `${line} (${input.year})` : line;
+}
+
+export function publicDurationLabel(minutes: number[]): string | null {
+  const values = [...new Set(minutes.filter((value) => Number.isInteger(value) && value > 0))].sort((left, right) => left - right);
+  const first = values[0];
+  const last = values[values.length - 1];
+  if (first === undefined || last === undefined) return null;
+  return first === last ? `${first} min` : `${first}–${last} min`;
 }
 
 export function uniqueConsultationModes(modes: Array<"ONLINE" | "IN_PERSON">): Array<"ONLINE" | "IN_PERSON"> {
@@ -195,7 +276,7 @@ async function readPublicLanding(db: PrismaClient, now: Date): Promise<PublicLan
               specialty: { isActive: true },
               doctor: approvedDoctor,
             },
-            select: { mode: true },
+            select: { mode: true, durationMinutes: true, price: true, currency: true },
           },
         },
       }),
@@ -351,6 +432,8 @@ async function readPublicLanding(db: PrismaClient, now: Date): Promise<PublicLan
           description: cleanText(service.description),
           bookable: modes.length > 0,
           modes,
+          durationLabel: publicDurationLabel(service.offerings.map((offering) => offering.durationMinutes)),
+          fee: publicSessionFee(service.offerings),
         };
       }),
       offerings,

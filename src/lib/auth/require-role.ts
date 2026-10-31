@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { homeForRoles } from "./access";
 import { isRecordsOffline } from "@/lib/db/offline";
+import { redirectOffline } from "@/lib/db/offline-redirect";
 import { readSessionUser } from "./current-user";
 import { SESSION_COOKIE } from "./session";
 import { prisma } from "@/lib/db/prisma";
@@ -18,7 +19,7 @@ export async function requireStoredRoles(allowed: string[]) {
   try {
     user = await readCachedSession(cookieStore.get(SESSION_COOKIE)?.value ?? "");
   } catch (error) {
-    if (isRecordsOffline(error)) redirect("/offline");
+    if (isRecordsOffline(error)) await redirectOffline();
     throw error;
   }
   if (!user) {

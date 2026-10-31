@@ -35,6 +35,7 @@ function appointment(overrides: Partial<ConsultationAppointment> = {}): Consulta
     doctorDeletedAt: null,
     doctorVerificationStatus: "APPROVED",
     paymentStatuses: ["PAID"],
+    feeAmountMinor: 5000,
     ...overrides,
   };
 }
@@ -86,7 +87,9 @@ describe("consultation eligibility", () => {
 
   it("issues a join decision for the assigned patient or doctor without starting the visit", () => {
     expect(decide()).toEqual({ ok: true, role: "patient" });
-    expect(decide({ paymentStatuses: [] })).toEqual({ ok: true, role: "patient" });
+    expect(decide({ paymentStatuses: [], feeAmountMinor: 5000 })).toEqual({ ok: false, code: "PAYMENT" });
+    expect(decide({ paymentStatuses: [], feeAmountMinor: 0 })).toEqual({ ok: true, role: "patient" });
+    expect(decide({ paymentStatuses: ["REQUIRES_ACTION"] }, { userId: DOCTOR, roleCodes: ["DOCTOR"] })).toEqual({ ok: false, code: "PAYMENT" });
     expect(decide({ status: "IN_PROGRESS" }, {}, new Date("2026-10-19T10:45:00.000Z"))).toEqual({ ok: true, role: "patient" });
     expect(decide({ status: "IN_PROGRESS" }, {}, new Date("2026-10-19T11:01:00.000Z"))).toEqual({ ok: false, code: "EXPIRED" });
     expect(appointmentStatusAfterDisconnect("CONFIRMED")).toBe("CONFIRMED");

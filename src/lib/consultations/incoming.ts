@@ -26,6 +26,7 @@ const callSelect = {
       user: { select: { status: true, deletedAt: true, profileImageUpdatedAt: true } },
     },
   },
+  feeAmountMinor: true,
   payments: { select: { status: true } },
 } satisfies Prisma.AppointmentSelect;
 
@@ -64,6 +65,7 @@ function toAppointment(row: CallRow): ConsultationAppointment {
     doctorDeletedAt: row.doctor.user.deletedAt,
     doctorVerificationStatus: row.doctor.verificationStatus,
     paymentStatuses: row.payments.map((payment) => payment.status),
+    feeAmountMinor: row.feeAmountMinor,
   };
 }
 

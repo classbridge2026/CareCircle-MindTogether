@@ -36,6 +36,7 @@ function row() {
       verificationStatus: "APPROVED",
       user: { status: "ACTIVE", deletedAt: null },
     },
+    feeAmountMinor: 5000,
     payments: [{ status: "PAID" }],
   };
 }

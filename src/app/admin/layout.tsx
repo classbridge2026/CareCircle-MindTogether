@@ -7,7 +7,7 @@ import { getSystemName } from "@/lib/brand/system-name";
 import { isRecordsOffline } from "@/lib/db/offline";
 import { prisma } from "@/lib/db/prisma";
 import { recentInAppNotices } from "@/lib/notifications/delivery";
-import { redirect } from "next/navigation";
+import { redirectOffline } from "@/lib/db/offline-redirect";
 
 export const metadata: Metadata = { title: "Administration" };
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ async function loadAdminChrome(userId: string) {
     ]);
     return { account, unreadNotifications, notices };
   } catch (error) {
-    if (isRecordsOffline(error)) redirect("/offline");
+    if (isRecordsOffline(error)) await redirectOffline();
     throw error;
   }
 }

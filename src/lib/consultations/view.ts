@@ -17,6 +17,7 @@ export function describeVisitJoin(input: {
   doctorDeletedAt: Date | null;
   doctorVerificationStatus: string;
   paymentStatuses: string[];
+  feeAmountMinor: number;
   when: string;
   now?: Date;
   audience?: "patient" | "doctor";
@@ -37,6 +38,7 @@ export function describeVisitJoin(input: {
       doctorDeletedAt: input.doctorDeletedAt,
       doctorVerificationStatus: input.doctorVerificationStatus,
       paymentStatuses: input.paymentStatuses,
+      feeAmountMinor: input.feeAmountMinor,
     },
     now,
     joinWindowMinutes: config.ok ? config.config.joinWindowMinutes : DEFAULT_JOIN_WINDOW_MINUTES,
@@ -49,7 +51,9 @@ export function describeVisitJoin(input: {
   const message = !online
     ? phaseMessage("in_person", input.when, audience)
     : !decision.ok
-      ? joinDenialMessage(decision.code)
+      ? decision.code === "PAYMENT"
+        ? phaseMessage("waiting_payment", input.when, audience)
+        : joinDenialMessage(decision.code)
       : config.ok
         ? phaseMessage(phase, input.when, audience)
         : liveKitUnavailableMessage();

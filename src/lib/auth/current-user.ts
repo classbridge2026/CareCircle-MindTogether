@@ -1,6 +1,6 @@
 import type { PrismaClient, UserStatus } from "@prisma/client";
-import { redirect } from "next/navigation";
 import { isRecordsOffline, RecordsOfflineError } from "@/lib/db/offline";
+import { redirectOffline } from "@/lib/db/offline-redirect";
 import { patientAccessDecision, ownPatientScope } from "./access";
 import { hashSessionToken } from "./tokens";
 
@@ -61,7 +61,7 @@ export async function readPageSession(db: PrismaClient, rawToken: string | undef
   try {
     return await readSessionUser(db, rawToken, now);
   } catch (error) {
-    if (isRecordsOffline(error)) redirect("/offline");
+    if (isRecordsOffline(error)) await redirectOffline();
     throw error;
   }
 }

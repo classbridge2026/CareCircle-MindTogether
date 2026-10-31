@@ -75,7 +75,7 @@ const PATIENT_TOPICS: Topic[] = [
     aliases: ["payments", "payment history"],
     keywords: ["payment", "payments", "paid", "pending"],
     summary: "Payments and History shows the charges stored for your visits, including what is paid and what is still pending.",
-    how: "Filter the list by status. The totals are yours alone.",
+    how: "After the doctor approves a visit, open that appointment and pay with Orange Money or Afrimoney. This page is the history. Filter it by status.",
     limits: "You cannot mark a payment successful, captured, or refunded.",
   },
   {

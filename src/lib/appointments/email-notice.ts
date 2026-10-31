@@ -68,8 +68,8 @@ export async function notifyAppointmentParties(
         mode: true,
         status: true,
         startsAt: true,
-        patient: { select: { userId: true, user: { select: { email: true, phoneE164: true, status: true, deletedAt: true } } } },
-        doctor: { select: { userId: true, user: { select: { email: true, phoneE164: true, status: true, deletedAt: true } } } },
+        patient: { select: { userId: true, user: { select: { email: true, status: true, deletedAt: true } } } },
+        doctor: { select: { userId: true, user: { select: { email: true, status: true, deletedAt: true } } } },
       },
     });
     if (!appointment?.patient?.user || !appointment.doctor?.user) return;
