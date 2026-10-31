@@ -1,6 +1,7 @@
 import { PaymentStatus, type PrismaClient } from "@prisma/client";
 import { parseUuid } from "@/lib/catalog/rules";
 import { isUniqueConflict } from "@/lib/doctors/errors";
+import { notifyAppointmentParties } from "@/lib/appointments/email-notice";
 import { confirmVerifiedPayment } from "@/lib/appointments/payment-holds";
 import { AFRIMONEY, normalizeSierraLeoneMsisdn } from "./mobile-money";
 import { nextProviderPaymentStatus, paymentAmountsMatch } from "./verification";
@@ -91,8 +92,8 @@ export async function reportOrangeTransfer(
     select: { id: true, status: true, feeAmountMinor: true, currency: true },
   });
   if (!appointment) return { message: "This visit could not be found.", tone: "error" };
-  if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING_PAYMENT") {
-    return { message: "Pay after the doctor approves the visit.", tone: "error" };
+  if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING_PAYMENT" && appointment.status !== "PENDING_APPROVAL") {
+    return { message: "This visit is not waiting for a payment.", tone: "error" };
   }
   if (appointment.feeAmountMinor <= 0) return { message: "This visit does not have a fee.", tone: "error" };
 
@@ -177,7 +178,8 @@ export async function reviewOrangeTransfer(
     if (!confirmed.ok) return { message: "The payment hold has closed, so this visit was not confirmed.", tone: "error" };
     return { message: `The ${wallet} transfer is confirmed and the visit is booked.`, tone: "ok" };
   }
-  if (input.decision === "confirm" && !CONFIRMABLE_VISIT.has(payment.appointment.status)) {
+  const awaitingApproval = payment.appointment.status === "PENDING_APPROVAL";
+  if (input.decision === "confirm" && !CONFIRMABLE_VISIT.has(payment.appointment.status) && !awaitingApproval) {
     return { message: "This visit is not waiting for a payment.", tone: "error" };
   }
 
@@ -203,8 +205,15 @@ export async function reviewOrangeTransfer(
       metadata: { appointmentId: payment.appointmentId },
     },
   });
+  if (input.decision === "confirm" && awaitingApproval) {
+    await notifyAppointmentParties(db, { appointmentId: payment.appointmentId, event: "paid" });
+  }
   return {
-    message: input.decision === "confirm" ? `The ${wallet} transfer is confirmed.` : "The transfer was not accepted. The patient can send it again.",
+    message: input.decision === "confirm"
+      ? awaitingApproval
+        ? `The ${wallet} transfer is confirmed. The doctor can approve the visit.`
+        : `The ${wallet} transfer is confirmed.`
+      : "The transfer was not accepted. The patient can send it again.",
     tone: "ok",
   };
 }

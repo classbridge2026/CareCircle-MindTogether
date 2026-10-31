@@ -91,8 +91,7 @@ export default async function DoctorAppointmentPage({
   }).ok;
 
   const recordOpen = visit.status === "CONFIRMED" || visit.status === "CHECKED_IN" || visit.status === "IN_PROGRESS" || visit.status === "COMPLETED";
-  const awaitingPayment = online && visit.feeAmountMinor > 0 && !paid;
-  const preparing = (visit.status === "CONFIRMED" || visit.status === "CHECKED_IN" || visit.status === "IN_PROGRESS") && !awaitingPayment;
+  const preparing = visit.status === "CONFIRMED" || visit.status === "CHECKED_IN" || visit.status === "IN_PROGRESS";
   const paymentLabel = latestPayment ? paymentStatusLabel(latestPayment) : paid ? "Paid" : "Not recorded";
   const followUp = isFollowUpConsultation({ code: visit.serviceCode, name: visit.service });
   const missed = now.getTime() >= visit.endsAt.getTime();
@@ -200,9 +199,6 @@ export default async function DoctorAppointmentPage({
 
         {online && !join.decision.ok && join.decision.code === "EXPIRED" ? (
           <p className="doc-banner">The video and audio window for this visit has closed.</p>
-        ) : null}
-        {awaitingPayment && (visit.status === "CONFIRMED" || visit.status === "CHECKED_IN" || visit.status === "IN_PROGRESS") ? (
-          <p className="doc-banner">The patient has not paid this visit. Prepare for consultation stays closed until the payment is confirmed.</p>
         ) : null}
         <div className="doc-actions">
           {preparing && !missed ? (

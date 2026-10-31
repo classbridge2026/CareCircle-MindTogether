@@ -88,8 +88,8 @@ export function appointmentStatusAfterDisconnect(status: string): string {
 export function paymentAllowsConsultation(status: string, paymentStatuses: string[], feeAmountMinor: number): boolean {
   if (status === "PENDING_PAYMENT" || status === "EXPIRED_UNPAID") return false;
   if (!JOINABLE.has(status)) return false;
-  if (!Number.isSafeInteger(feeAmountMinor) || feeAmountMinor <= 0) return feeAmountMinor === 0;
-  return paymentStatuses.includes("PAID");
+  if (!Number.isSafeInteger(feeAmountMinor) || feeAmountMinor < 0) return false;
+  return true;
 }
 
 export function joinDecision(input: {
@@ -98,6 +98,8 @@ export function joinDecision(input: {
   now: Date;
   joinWindowMinutes: number;
   rejoinGraceMinutes: number;
+  /** Set when the assigned doctor has already started the call, so the patient can answer early. */
+  doctorCalling?: boolean;
 }): { ok: true; role: "patient" | "doctor" } | { ok: false; code: JoinCode } {
   const isPatient = input.appointment.patientUserId === input.actor.userId;
   const isDoctor = input.appointment.doctorUserId === input.actor.userId;
@@ -134,7 +136,9 @@ export function joinDecision(input: {
   if (input.now.getTime() > closesAt) return { ok: false, code: "EXPIRED" };
   if (!paymentAllowsConsultation(status, input.appointment.paymentStatuses, input.appointment.feeAmountMinor)) return { ok: false, code: "PAYMENT" };
   const opensAt = input.appointment.startsAt.getTime() - input.joinWindowMinutes * 60_000;
-  if (input.now.getTime() < opensAt) return { ok: false, code: "TOO_EARLY" };
+  // The doctor can start the call before the appointment time. The patient stays closed until the
+  // join window, unless the doctor has already started and the patient is answering that call.
+  if (input.now.getTime() < opensAt && role !== "doctor" && !input.doctorCalling) return { ok: false, code: "TOO_EARLY" };
   return { ok: true, role };
 }
 

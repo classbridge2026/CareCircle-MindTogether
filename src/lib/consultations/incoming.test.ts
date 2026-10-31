@@ -74,7 +74,7 @@ describe("incoming consultation calls", () => {
 
   it("tells an eligible patient they can join", () => {
     expect(phaseMessage("ready", "19 Oct 2026, 10:00 GMT", "patient")).toMatch(/you can join/i);
-    expect(phaseMessage("ready", "19 Oct 2026, 10:00 GMT", "doctor")).toMatch(/you can join/i);
+    expect(phaseMessage("ready", "19 Oct 2026, 10:00 GMT", "doctor")).toMatch(/you can start/i);
     expect(phaseMessage("scheduled", "19 Oct 2026, 10:00 GMT", "patient")).toMatch(/not open yet/i);
   });
 
@@ -134,6 +134,48 @@ describe("incoming consultation calls", () => {
     );
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.calls).toHaveLength(1);
+  });
+
+  it("rings the patient when the doctor starts before the appointment time", async () => {
+    const early = new Date("2026-10-19T08:00:00.000Z");
+    beginDoctorCall(APPOINTMENT, early.getTime());
+    let where: unknown = null;
+    const db = {
+      appointment: {
+        findUnique: async () => row(),
+        findMany: async (args: { where: unknown }) => {
+          where = args.where;
+          return [row()];
+        },
+      },
+      patientProfile: { findUnique: async () => ({ id: "profile-1" }) },
+    } as unknown as PrismaClient;
+    const listed = await listIncomingCalls(
+      db,
+      { actorUserId: PATIENT, actorStatus: "ACTIVE", roleCodes: ["PATIENT"], now: early },
+      {
+        limiter: createRateLimiter({ limit: 5, windowMs: 60_000 }),
+        config: configured,
+        now: early,
+        listParticipants: async () => [],
+      },
+    );
+    expect(listed.ok).toBe(true);
+    if (listed.ok) expect(listed.calls).toHaveLength(1);
+    expect(JSON.stringify(where)).toContain(APPOINTMENT);
+
+    const direct = await readAppointmentCall(
+      database(),
+      { actorUserId: PATIENT, actorStatus: "ACTIVE", roleCodes: ["PATIENT"], appointmentId: APPOINTMENT, now: early },
+      {
+        limiter: createRateLimiter({ limit: 5, windowMs: 60_000 }),
+        config: configured,
+        now: early,
+        listParticipants: async () => [],
+      },
+    );
+    expect(direct.ok).toBe(true);
+    if (direct.ok) expect(direct.call?.appointmentId).toBe(APPOINTMENT);
   });
 
   it("rings from the doctor's join signal before the room list returns", async () => {

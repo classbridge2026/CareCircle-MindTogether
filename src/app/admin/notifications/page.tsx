@@ -10,7 +10,7 @@ import { loadNotifications } from "@/lib/admin/directories";
 import { emailProviderConfigured } from "@/lib/auth/delivery";
 import { listDeliveryLog } from "@/lib/notifications/admin-log";
 import { retryDeliveryAction } from "./actions";
-import { formatPlatformWhen } from "@/lib/admin/labels";
+import { adminEntityHref, formatPlatformWhen } from "@/lib/admin/labels";
 import { readPage } from "@/lib/catalog/queries";
 import { prisma } from "@/lib/db/prisma";
 import { MarkViewedNotifications } from "@/components/notifications/mark-viewed";
@@ -97,6 +97,11 @@ export default async function NotificationsPage({ searchParams }: { searchParams
                     {note.entityType === "DoctorProfile" && note.entityId ? (
                       <Link className="notice-link" href={`/admin/doctors/${note.entityId}`}>
                         Review and verify
+                      </Link>
+                    ) : null}
+                    {note.entityType === "Appointment" && note.entityId && adminEntityHref("Appointment", note.entityId) ? (
+                      <Link className="notice-link" href={adminEntityHref("Appointment", note.entityId) ?? "/admin/appointments"}>
+                        Open the appointment
                       </Link>
                     ) : null}
                   </div>

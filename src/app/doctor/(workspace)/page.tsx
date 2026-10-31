@@ -157,6 +157,7 @@ function schedulePill(status: string, passed: boolean) {
   if (status === "COMPLETED") return { label: "Completed", tone: "done" };
   if (status === "IN_PROGRESS") return { label: "In Progress", tone: "live" };
   if (status === "PENDING_APPROVAL") return { label: "Needs approval", tone: "wait" };
+  if (status === "PENDING_PAYMENT") return { label: "Awaiting payment", tone: "wait" };
   if (passed && (status === "CONFIRMED" || status === "PENDING_PAYMENT" || status === "CHECKED_IN")) return { label: "Time passed", tone: "wait" };
   if (status === "CONFIRMED" || status === "PENDING_PAYMENT") return { label: "Upcoming", tone: "next" };
   if (status === "CHECKED_IN") return { label: "Checked in", tone: "live" };

@@ -118,4 +118,55 @@ describe("appointment email notices", () => {
     );
     expect(sent).toHaveLength(0);
   });
+
+  it("notifies each administrator when a patient books a doctor", async () => {
+    const notes: Array<Record<string, unknown>> = [];
+    const sent: string[] = [];
+    const db = {
+      appointment: {
+        findUnique: async () => ({
+          id: "22222222-2222-4222-8222-222222222222",
+          status: "PENDING_APPROVAL",
+          startsAt: new Date("2026-10-19T09:00:00.000Z"),
+          patient: {
+            userId: "patient-user",
+            fullName: "Mohamed Patient",
+            user: { email: "patient@example.com", status: "ACTIVE", deletedAt: null },
+          },
+          doctor: {
+            userId: "doctor-user",
+            displayName: "Osman",
+            fullName: "Osman",
+            user: { email: "doctor@example.com", status: "ACTIVE", deletedAt: null },
+          },
+        }),
+      },
+      user: {
+        findMany: async () => [
+          { id: "admin-user", email: "admin@example.com", status: "ACTIVE", deletedAt: null },
+          { id: "doctor-user", email: "doctor@example.com", status: "ACTIVE", deletedAt: null },
+        ],
+      },
+      notification: {
+        create: async ({ data }: { data: Record<string, unknown> }) => {
+          notes.push(data);
+        },
+      },
+    };
+    await notifyAppointmentParties(
+      db as unknown as PrismaClient,
+      { appointmentId: "22222222-2222-4222-8222-222222222222", event: "requested", appBaseUrl: "http://localhost:3000" },
+      async ({ to, text }) => {
+        sent.push(`${to}:${text}`);
+        return { delivered: true, reason: "sent" };
+      },
+    );
+    expect(sent).toHaveLength(3);
+    const adminMail = sent.find((row) => row.startsWith("admin@example.com"));
+    expect(adminMail).toContain("Mohamed Patient booked Osman");
+    expect(adminMail).toContain("/admin/appointments/22222222-2222-4222-8222-222222222222");
+    expect(adminMail).not.toMatch(/diagnosis|note|password|token/i);
+    expect(notes.filter((row) => row.recipientId === "admin-user" && row.channel === "IN_APP" && row.status === "SENT")).toHaveLength(1);
+    expect(notes.filter((row) => row.recipientId === "doctor-user" && row.channel === "IN_APP")).toHaveLength(1);
+  });
 });

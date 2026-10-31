@@ -4,7 +4,7 @@ import { sharedRateLimiter, type RateLimiter } from "@/lib/auth/rate-limit";
 import { parseUuid } from "@/lib/catalog/rules";
 import { readLiveKitConfig, type LiveKitConfigResult } from "@/lib/livekit/config";
 import { liveKitOperations, type LiveKitOperations, type TokenGrantInput } from "@/lib/livekit/server";
-import { beginDoctorCall, clearDoctorCall, notePatientLeft } from "./calling";
+import { beginDoctorCall, clearDoctorCall, notePatientLeft, readDoctorCall } from "./calling";
 import {
   consultationRoomName,
   joinDecision,
@@ -137,6 +137,7 @@ export async function issueConsultationToken(
     now,
     joinWindowMinutes: config.ok ? config.config.joinWindowMinutes : 15,
     rejoinGraceMinutes: config.ok ? config.config.rejoinGraceMinutes : 30,
+    doctorCalling: readDoctorCall(row.id, now.getTime()) !== null,
   });
   if (!decision.ok) {
     if (decision.code !== "NOT_FOUND") {

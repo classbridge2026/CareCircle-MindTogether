@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { PaymentStatus, type PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { parseUuid } from "@/lib/catalog/rules";
+import { notifyAppointmentParties } from "@/lib/appointments/email-notice";
 import { confirmVerifiedPayment } from "@/lib/appointments/payment-holds";
 import { decimalToMinorUnits, parseCurrency, parseMoney } from "@/lib/catalog/money";
 import { nextProviderPaymentStatus, paymentAmountsMatch } from "./verification";
@@ -23,6 +24,8 @@ export type PayState = { message?: string; paymentUrl?: string };
 
 function refresh(appointmentId: string) {
   revalidatePath(`/patient/appointments/${appointmentId}`);
+  revalidatePath(`/doctor/appointments/${appointmentId}`);
+  revalidatePath("/doctor");
   revalidatePath("/patient/payments");
   revalidatePath("/patient");
   revalidatePath("/admin/payments");
@@ -51,8 +54,8 @@ export async function beginVisitPayment(
     select: { id: true, status: true, feeAmountMinor: true, currency: true },
   });
   if (!appointment) return { message: "This visit could not be found." };
-  if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING_PAYMENT") {
-    return { message: "Pay after the doctor approves the visit." };
+  if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING_PAYMENT" && appointment.status !== "PENDING_APPROVAL") {
+    return { message: "This visit is not waiting for a payment." };
   }
   if (appointment.feeAmountMinor <= 0) return { message: "This visit does not have a fee." };
 
@@ -205,6 +208,7 @@ export async function applyWalletResult(
     refresh(payment.appointmentId);
     return { ok: true, appointmentId: payment.appointmentId };
   }
+  const awaitingApproval = incoming === "PAID" && payment.appointment.status === "PENDING_APPROVAL";
 
   await db.payment.update({ where: { id: payment.id }, data: { status: next.status as PaymentStatus } });
   await db.paymentEvent.create({
@@ -216,6 +220,9 @@ export async function applyWalletResult(
       payloadSummary: { source: "wallet", rawStatus: input.rawStatus },
     },
   }).catch(() => undefined);
+  if (awaitingApproval) {
+    await notifyAppointmentParties(db, { appointmentId: payment.appointmentId, event: "paid" });
+  }
   refresh(payment.appointmentId);
   return { ok: true, appointmentId: payment.appointmentId };
 }

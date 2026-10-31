@@ -5,7 +5,7 @@ import { formatBookingWhen } from "@/lib/appointments/time";
 import { readLiveKitConfig, type LiveKitConfigResult } from "@/lib/livekit/config";
 import { listConsultationParticipants, type RoomParticipant } from "@/lib/livekit/server";
 import type { AccessCode } from "./access";
-import { readDoctorCall } from "./calling";
+import { listedDoctorCallIds, readDoctorCall } from "./calling";
 import { consultationRoomName, joinDecision, participantIdentity, type ConsultationAppointment } from "./eligibility";
 
 const callLimiter = sharedRateLimiter("consultation-call", { limit: 40, windowMs: 60_000 });
@@ -76,15 +76,16 @@ async function callForRow(
   listParticipants: (roomName: string) => Promise<RoomParticipant[]>,
 ): Promise<IncomingCall | null> {
   if (!config.ok) return null;
+  const marked = readDoctorCall(row.id, input.now.getTime());
   const decision = joinDecision({
     actor: { userId: input.actorUserId, status: input.actorStatus, roleCodes: input.roleCodes },
     appointment: toAppointment(row),
     now: input.now,
     joinWindowMinutes: config.config.joinWindowMinutes,
     rejoinGraceMinutes: config.config.rejoinGraceMinutes,
+    doctorCalling: marked !== null,
   });
   if (!decision.ok || decision.role !== "patient") return null;
-  const marked = readDoctorCall(row.id, input.now.getTime());
   if (marked) {
     return {
       appointmentId: row.id,
@@ -168,21 +169,30 @@ export async function listIncomingCalls(
   if (!config.ok) return { ok: true, calls: [] };
   const windowStart = new Date(now.getTime() - config.config.rejoinGraceMinutes * 60_000);
   const windowEnd = new Date(now.getTime() + config.config.joinWindowMinutes * 60_000);
+  const callingIds = listedDoctorCallIds(now.getTime());
+  const openForCall: Prisma.AppointmentWhereInput[] = [
+    {
+      status: { in: ["CONFIRMED", "CHECKED_IN"] },
+      startsAt: { lte: windowEnd },
+      endsAt: { gte: windowStart },
+    },
+    {
+      status: "IN_PROGRESS",
+      endsAt: { gte: windowStart },
+    },
+  ];
+  if (callingIds.length > 0) {
+    openForCall.push({
+      id: { in: callingIds },
+      status: { in: ["CONFIRMED", "CHECKED_IN", "IN_PROGRESS"] },
+      endsAt: { gte: windowStart },
+    });
+  }
   const rows = await db.appointment.findMany({
     where: {
       patientProfileId: patient.id,
       mode: "ONLINE",
-      OR: [
-        {
-          status: { in: ["CONFIRMED", "CHECKED_IN"] },
-          startsAt: { lte: windowEnd },
-          endsAt: { gte: windowStart },
-        },
-        {
-          status: "IN_PROGRESS",
-          endsAt: { gte: windowStart },
-        },
-      ],
+      OR: openForCall,
     },
     orderBy: { startsAt: "asc" },
     take: 8,

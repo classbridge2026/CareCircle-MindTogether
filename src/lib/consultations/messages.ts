@@ -75,11 +75,11 @@ export function phaseMessage(phase: string, when: string, audience: "patient" | 
     case "scheduled":
       return patient
         ? `Your consultation is not open yet. Please return closer to your appointment time (${when}, Africa/Freetown).`
-        : `You can join shortly before ${when}. The appointment time uses Africa/Freetown (GMT).`;
+        : `You can start this consultation before ${when}. The appointment time uses Africa/Freetown (GMT).`;
     case "ready":
       return patient
         ? "You can join this online consultation. Check your camera and microphone first. If your doctor is already in the room, you can also accept the call."
-        : "You can join this online consultation.";
+        : "You can start this online consultation now, including before the appointment time.";
     case "in_progress":
       return patient
         ? "Your consultation is in progress. You can return to the room. Leaving the video does not complete the visit."

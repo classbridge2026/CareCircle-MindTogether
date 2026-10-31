@@ -85,7 +85,7 @@ export function VisitPayment({
       {paid ? (
         <p className="pay-note" role="status">This fee is paid. The consultation can open when the visit time arrives.</p>
       ) : pendingApproval ? (
-        <p className="pay-note">The fee stays uncollected until the doctor approves this booking.</p>
+        <p className="pay-note">This booking is waiting for the doctor to approve or decline it.</p>
       ) : waitingReference ? (
         <div className="pay-wait" role="status">
           <p className="pay-wait-title">Waiting for confirmation</p>

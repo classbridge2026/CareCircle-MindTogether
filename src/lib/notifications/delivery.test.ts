@@ -73,6 +73,9 @@ describe("notification delivery tracking", () => {
     expect(safeInternalHref("admin", "DoctorProfile", "22222222-2222-4222-8222-222222222222")).toBe(
       "/admin/doctors/22222222-2222-4222-8222-222222222222",
     );
+    expect(safeInternalHref("admin", "Appointment", "22222222-2222-4222-8222-222222222222")).toBe(
+      "/admin/appointments/22222222-2222-4222-8222-222222222222",
+    );
   });
 
   it("marks only the signed-in person's unseen notices", async () => {

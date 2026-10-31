@@ -72,8 +72,8 @@ export async function reportAfrimoneyTransfer(
     select: { id: true, status: true, feeAmountMinor: true, currency: true },
   });
   if (!appointment) return { message: "This visit could not be found.", tone: "error" };
-  if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING_PAYMENT") {
-    return { message: "Pay after the doctor approves the visit.", tone: "error" };
+  if (appointment.status !== "CONFIRMED" && appointment.status !== "PENDING_PAYMENT" && appointment.status !== "PENDING_APPROVAL") {
+    return { message: "This visit is not waiting for a payment.", tone: "error" };
   }
   if (appointment.feeAmountMinor <= 0) return { message: "This visit does not have a fee.", tone: "error" };
   if (!ussdAmount(appointment.feeAmountMinor)) return { message: "This visit fee cannot be sent by phone.", tone: "error" };

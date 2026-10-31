@@ -232,6 +232,7 @@ export function safeInternalHref(role: "patient" | "doctor" | "admin", entityTyp
   if (entityType === "Appointment") {
     if (role === "patient") return `/patient/appointments/${entityId}`;
     if (role === "doctor") return `/doctor/appointments/${entityId}`;
+    return `/admin/appointments/${entityId}`;
   }
   if (role === "admin" && entityType === "DoctorProfile") return `/admin/doctors/${entityId}`;
   return null;

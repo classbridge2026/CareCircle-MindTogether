@@ -4,6 +4,7 @@ import { createRateLimiter } from "@/lib/auth/rate-limit";
 import type { LiveKitConfigResult } from "@/lib/livekit/config";
 import type { LiveKitOperations, TokenGrantInput } from "@/lib/livekit/server";
 import { issueConsultationToken, recordParticipantLeave } from "./access";
+import { beginDoctorCall, resetDoctorCallsForTests } from "./calling";
 
 const PATIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const DOCTOR = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -90,6 +91,41 @@ function operations() {
 }
 
 describe("consultation token access", () => {
+  it("lets the doctor start before the appointment time and keeps the patient closed until the doctor calls", async () => {
+    resetDoctorCallsForTests();
+    const early = new Date("2026-10-19T08:00:00.000Z");
+    const doctorStore = database();
+    const doctorLivekit = operations();
+    const doctor = await issueConsultationToken(
+      doctorStore.db,
+      { actorUserId: DOCTOR, actorStatus: "ACTIVE", roleCodes: ["DOCTOR"], appointmentId: APPOINTMENT, audioOnly: false, now: early },
+      { limiter: createRateLimiter({ limit: 5, windowMs: 60_000 }), config: configured, operations: doctorLivekit.gateway, now: early },
+    );
+    expect(doctor.ok).toBe(true);
+
+    resetDoctorCallsForTests();
+    const patientStore = database();
+    const patientLivekit = operations();
+    const patient = await issueConsultationToken(
+      patientStore.db,
+      { actorUserId: PATIENT, actorStatus: "ACTIVE", roleCodes: ["PATIENT"], appointmentId: APPOINTMENT, audioOnly: false, now: early },
+      { limiter: createRateLimiter({ limit: 5, windowMs: 60_000 }), config: configured, operations: patientLivekit.gateway, now: early },
+    );
+    expect(patient).toEqual({ ok: false, code: "TOO_EARLY" });
+    expect(patientLivekit.rooms).toEqual([]);
+
+    beginDoctorCall(APPOINTMENT, early.getTime());
+    const answering = database();
+    const answeringLivekit = operations();
+    const answered = await issueConsultationToken(
+      answering.db,
+      { actorUserId: PATIENT, actorStatus: "ACTIVE", roleCodes: ["PATIENT"], appointmentId: APPOINTMENT, audioOnly: false, now: early },
+      { limiter: createRateLimiter({ limit: 5, windowMs: 60_000 }), config: configured, operations: answeringLivekit.gateway, now: early },
+    );
+    expect(answered.ok).toBe(true);
+    resetDoctorCallsForTests();
+  });
+
   it("gives the assigned patient a room token and does not start the appointment", async () => {
     const store = database();
     const livekit = operations();

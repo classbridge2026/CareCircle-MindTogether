@@ -96,6 +96,17 @@ export function readDoctorCall(appointmentId: string, now = Date.now()) {
   return current.callId;
 }
 
+export function listedDoctorCallIds(now = Date.now()): string[] {
+  const fresh: string[] = [];
+  const stale: string[] = [];
+  for (const [appointmentId, current] of store()) {
+    if (now - current.at > FRESH_MS) stale.push(appointmentId);
+    else fresh.push(appointmentId);
+  }
+  for (const appointmentId of stale) store().delete(appointmentId);
+  return fresh;
+}
+
 export function resetDoctorCallsForTests() {
   store().clear();
   notices().clear();

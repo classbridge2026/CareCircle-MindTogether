@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { ADMIN_ROLE_CODE, SUPER_ADMIN_ROLE_CODE } from "@/lib/auth/constants";
 import { sendCareCircleEmail, type DeliveryResult } from "@/lib/auth/delivery";
 import { nextRetryAt, reminderChannelAllowed, saveChannelNotice } from "@/lib/notifications/delivery";
 import { loadSystemName } from "@/lib/brand/system-name";
@@ -33,6 +34,11 @@ const copy: Record<AppointmentNotice, { subject: (systemName: string) => string;
     line: "A booking is waiting for the doctor to approve it. The patient can see it under Pending.",
     type: "appointment.requested",
   },
+  paid: {
+    subject: (systemName) => `Payment received on ${systemName}`,
+    line: "The visit fee is confirmed. The doctor can approve the booking.",
+    type: "appointment.paid",
+  },
   reminder_day: {
     subject: (systemName) => `Appointment tomorrow on ${systemName}`,
     line: "An appointment is scheduled for tomorrow.",
@@ -49,10 +55,28 @@ const REMINDER: ReadonlySet<AppointmentNotice> = new Set(["reminder_day", "remin
 
 type PartyUser = { email: string; status: string; deletedAt: Date | null } | null | undefined;
 
-type Recipient = { userId: string; email: string; href: string };
+type Recipient = { userId: string; email: string; href: string; kind: "patient" | "doctor" | "admin" };
 
 function partyReady(user: PartyUser) {
   return Boolean(user && !user.deletedAt && user.status !== "DISABLED" && user.email.trim());
+}
+
+async function loadBookingAdmins(db: PrismaClient) {
+  if (!("user" in db) || typeof db.user?.findMany !== "function") return [];
+  try {
+    const rows = await db.user.findMany({
+      where: {
+        deletedAt: null,
+        status: "ACTIVE",
+        roles: { some: { role: { code: { in: [ADMIN_ROLE_CODE, SUPER_ADMIN_ROLE_CODE] } } } },
+      },
+      select: { id: true, email: true, status: true, deletedAt: true },
+    });
+    return rows.filter((row) => partyReady(row));
+  } catch {
+    console.error("appointment_admin_notice_failed");
+    return [];
+  }
 }
 
 export async function notifyAppointmentParties(
@@ -68,8 +92,8 @@ export async function notifyAppointmentParties(
         mode: true,
         status: true,
         startsAt: true,
-        patient: { select: { userId: true, user: { select: { email: true, status: true, deletedAt: true } } } },
-        doctor: { select: { userId: true, user: { select: { email: true, status: true, deletedAt: true } } } },
+        patient: { select: { userId: true, fullName: true, user: { select: { email: true, status: true, deletedAt: true } } } },
+        doctor: { select: { userId: true, displayName: true, fullName: true, user: { select: { email: true, status: true, deletedAt: true } } } },
       },
     });
     if (!appointment?.patient?.user || !appointment.doctor?.user) return;
@@ -86,6 +110,7 @@ export async function notifyAppointmentParties(
         userId: appointment.patient.userId,
         email: appointment.patient.user.email,
         href: base ? `${base}/patient/appointments/${appointment.id}` : "",
+        kind: "patient",
       });
     }
     if (partyReady(appointment.doctor.user) && appointment.doctor.userId !== appointment.patient.userId) {
@@ -93,8 +118,31 @@ export async function notifyAppointmentParties(
         userId: appointment.doctor.userId,
         email: appointment.doctor.user.email,
         href: base ? `${base}/doctor/appointments/${appointment.id}` : "",
+        kind: "doctor",
       });
     }
+    if (input.event === "requested" || input.event === "paid") {
+      const admins = await loadBookingAdmins(db);
+      for (const admin of admins) {
+        if (recipients.some((recipient) => recipient.userId === admin.id)) continue;
+        recipients.push({
+          userId: admin.id,
+          email: admin.email,
+          href: base ? `${base}/admin/appointments/${appointment.id}` : "",
+          kind: "admin",
+        });
+      }
+    }
+    const patientName = appointment.patient.fullName?.trim() ?? "";
+    const doctorName = (appointment.doctor.displayName || appointment.doctor.fullName || "").trim();
+    const adminLine =
+      input.event === "paid"
+        ? patientName && doctorName
+          ? `${patientName} paid for the visit with ${doctorName}. The doctor can approve it.`
+          : "A patient paid for a visit. The doctor can approve it."
+        : patientName && doctorName
+          ? `${patientName} booked ${doctorName}. The visit is waiting for the doctor to approve it.`
+          : "A patient booked a doctor. The visit is waiting for the doctor to approve it.";
 
     for (const recipient of recipients) {
       if (REMINDER.has(input.event)) {
@@ -110,10 +158,11 @@ export async function notifyAppointmentParties(
         });
         if (already) continue;
       }
-      const text = [notice.line, `Time: ${when} (Africa/Freetown).`, recipient.href ? `Open the appointment: ${recipient.href}` : ""]
+      const line = recipient.kind === "admin" ? adminLine : notice.line;
+      const text = [line, `Time: ${when} (Africa/Freetown).`, recipient.href ? `Open the appointment: ${recipient.href}` : ""]
         .filter(Boolean)
         .join("\n");
-      const preview = `${notice.line} ${when}.`;
+      const preview = `${line} ${when}.`;
       const baseNotice = {
         recipientId: recipient.userId,
         type: notice.type,
