@@ -6,7 +6,7 @@ import { loadSystemName } from "@/lib/brand/system-name";
 import { ensureConsultationNotice } from "@/lib/consultations/notices";
 import { formatBookingWhen } from "./time";
 
-export type AppointmentNotice = "held" | "confirmed" | "cancelled" | "rescheduled" | "requested" | "reminder_day" | "reminder_hour";
+export type AppointmentNotice = "held" | "confirmed" | "cancelled" | "rescheduled" | "requested" | "paid" | "reminder_day" | "reminder_hour";
 
 const copy: Record<AppointmentNotice, { subject: (systemName: string) => string; line: string; type: string }> = {
   held: {
