@@ -3,7 +3,7 @@ import { DEFAULT_SYSTEM_NAME, getSystemName } from "@/lib/brand/system-name";
 
 export type DeliveryResult = {
   delivered: boolean;
-  reason: "sent" | "not_configured" | "provider_failed" | "invalid_destination";
+  reason: "sent" | "not_configured" | "provider_failed";
   providerMessageId?: string | null;
 };
 

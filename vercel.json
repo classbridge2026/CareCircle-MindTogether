@@ -1,4 +1,5 @@
 {
+  "buildCommand": "prisma generate && next build",
   "regions": ["cle1"],
   "crons": [
     {

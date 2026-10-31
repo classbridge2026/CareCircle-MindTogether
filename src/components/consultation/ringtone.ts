@@ -34,18 +34,19 @@ function pulse() {
 export function startRingtone(): () => void {
   const ctx = audioContext();
   if (!ctx) return () => undefined;
+  const audio = ctx;
   let stopped = false;
   let playing = false;
   let timer = 0;
 
   function tone(when: number, duration: number) {
-    const gain = ctx.createGain();
-    gain.connect(ctx.destination);
+    const gain = audio.createGain();
+    gain.connect(audio.destination);
     gain.gain.setValueAtTime(0.0001, when);
     gain.gain.exponentialRampToValueAtTime(0.2, when + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
     for (const frequency of [440, 480]) {
-      const osc = ctx.createOscillator();
+      const osc = audio.createOscillator();
       osc.type = "sine";
       osc.frequency.value = frequency;
       osc.connect(gain);
@@ -55,11 +56,11 @@ export function startRingtone(): () => void {
   }
 
   function pattern() {
-    if (stopped || ctx.state !== "running") {
+    if (stopped || audio.state !== "running") {
       playing = false;
       return;
     }
-    const now = ctx.currentTime;
+    const now = audio.currentTime;
     try {
       tone(now, 0.42);
       tone(now + 0.55, 0.42);
@@ -73,8 +74,8 @@ export function startRingtone(): () => void {
 
   function resume() {
     if (stopped || playing) return;
-    void ctx.resume().then(() => {
-      if (stopped || playing || ctx.state !== "running") return;
+    void audio.resume().then(() => {
+      if (stopped || playing || audio.state !== "running") return;
       playing = true;
       pattern();
     }).catch(() => undefined);
